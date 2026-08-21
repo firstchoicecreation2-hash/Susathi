@@ -626,26 +626,48 @@ const BACKEND_URL = ''; // same domain on Vercel — requests go to /api/...
 const CATS = ['All','Formal','Casual','T-Shirt','Pants','Lower','Winter'];
 
 /* ================= STORAGE ================= */
+const hasClaudeStorage = (typeof window !== 'undefined' && typeof window.storage !== 'undefined');
+
 async function loadData(){
+  // Products come from the shared /api/products endpoint so every visitor sees
+  // the same catalog and the admin's changes appear for everyone instantly.
   try{
-    const p = await window.storage.get('susathi-products', false);
-    PRODUCTS = p ? JSON.parse(p.value) : JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+    const res = await fetch('/api/products');
+    PRODUCTS = await res.json();
   }catch(e){
     PRODUCTS = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
   }
+  // Cart stays personal to each visitor's own browser — same as any real store.
   try{
-    const c = await window.storage.get('susathi-cart', false);
-    CART = c ? JSON.parse(c.value) : [];
+    if(hasClaudeStorage){
+      const c = await window.storage.get('susathi-cart', false);
+      CART = c ? JSON.parse(c.value) : [];
+    }else{
+      const raw = localStorage.getItem('susathi-cart');
+      CART = raw ? JSON.parse(raw) : [];
+    }
   }catch(e){ CART = []; }
   renderCategoryStrip();
   renderProducts();
   renderCart();
 }
 async function saveProducts(){
-  try{ await window.storage.set('susathi-products', JSON.stringify(PRODUCTS), false); }catch(e){ console.error(e); }
+  try{
+    await fetch('/api/products', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'x-admin-passcode': ADMIN_PASSCODE},
+      body: JSON.stringify({products: PRODUCTS})
+    });
+  }catch(e){ console.error('Could not save products:', e); }
 }
 async function saveCart(){
-  try{ await window.storage.set('susathi-cart', JSON.stringify(CART), false); }catch(e){ console.error(e); }
+  try{
+    if(hasClaudeStorage){
+      await window.storage.set('susathi-cart', JSON.stringify(CART), false);
+    }else{
+      localStorage.setItem('susathi-cart', JSON.stringify(CART));
+    }
+  }catch(e){ console.error(e); }
 }
 function toast(msg){
   const t = document.getElementById('save-toast');
