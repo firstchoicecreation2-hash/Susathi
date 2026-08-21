@@ -221,6 +221,7 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
     <a href="#collection">Collection</a>
     <a href="#winter">Winter</a>
     <a href="#about">House</a>
+    <a href="#" onclick="openModal('terms-overlay'); return false;">Terms</a>
   </nav>
   <div class="nav-actions">
     <button class="admin-toggle" onclick="showAdmin()">Admin</button>
@@ -264,6 +265,14 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
   <footer>
     <span class="logo">SUSATHI<span style="color:var(--gold);">.</span></span>
     <p>&copy; 2026 Susathi. Crafted for those who dress with intent.</p>
+    <p style="margin-top:16px; display:flex; gap:18px; justify-content:center; flex-wrap:wrap; font-size:0.82rem;">
+      <a href="#" onclick="openModal('terms-overlay'); return false;" style="color:var(--muted); text-decoration:underline; text-underline-offset:3px;">Terms &amp; Conditions</a>
+      <a href="#" onclick="openModal('shipping-overlay'); return false;" style="color:var(--muted); text-decoration:underline; text-underline-offset:3px;">Shipping Policy</a>
+      <a href="#" onclick="openModal('privacy-overlay'); return false;" style="color:var(--muted); text-decoration:underline; text-underline-offset:3px;">Privacy Policy</a>
+      <a href="#" onclick="openModal('returns-overlay'); return false;" style="color:var(--muted); text-decoration:underline; text-underline-offset:3px;">Return &amp; Refund Policy</a>
+      <a href="#" onclick="openModal('payment-policy-overlay'); return false;" style="color:var(--muted); text-decoration:underline; text-underline-offset:3px;">Payment Policy</a>
+    </p>
+    <p style="margin-top:16px; font-size:0.8rem;">Support: yogeshsharma072004@gmail.com &nbsp;|&nbsp; +91 78369 50764, +91 78276 00508</p>
   </footer>
 
 </div>
@@ -404,6 +413,173 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
           </thead>
           <tbody id="admin-table-body"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TERMS & CONDITIONS MODAL ============ -->
+<div class="overlay" id="terms-overlay">
+  <div class="modal" style="max-width:720px;">
+    <button class="modal-close" onclick="closeModal('terms-overlay')">&times;</button>
+    <div class="checkout-body">
+      <h3>Terms &amp; Conditions</h3>
+      <p class="checkout-sub">Last updated: August 2026</p>
+      <div style="color:var(--muted); font-size:0.92rem; line-height:1.8;">
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">1. About Susathi</h4>
+        <p>Susathi ("we", "us", "our") sells clothing and accessories through this website. By placing an order, you agree to the terms below.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">2. Orders &amp; Pricing</h4>
+        <p>All prices are listed in Indian Rupees (₹) and include applicable taxes unless stated otherwise. We reserve the right to correct pricing errors and to cancel an order affected by such an error, with a full refund.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">3. Payments</h4>
+        <p>Payments are processed securely through Razorpay. We do not store your card, UPI, or banking details on our servers. Cash on Delivery is available on select orders.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">4. Shipping</h4>
+        <p>Orders are typically dispatched within [X] business days. Delivery timelines vary by location. Shipping charges, if any, are shown at checkout.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">5. Returns &amp; Exchanges</h4>
+        <p>Unworn items with original tags may be returned within [X] days of delivery. Refunds are issued to the original payment method once the returned item is inspected. Sale items may be marked final sale.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">6. Product Availability</h4>
+        <p>All products are subject to availability. We may remove or update products, prices, and stock levels at any time without prior notice.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">7. Limitation of Liability</h4>
+        <p>Susathi is not liable for indirect or incidental damages arising from the use of this website or its products, to the extent permitted by law.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">8. Contact</h4>
+        <p>For questions about these terms, reach us at yogeshsharma072004@gmail.com or call +91 78369 50764 / +91 78276 00508.</p>
+
+        <p style="margin-top:22px; font-size:0.8rem; color:var(--hairline);">This is a general starting template and not legal advice — consider having it reviewed for your specific business before going fully live.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SHIPPING POLICY MODAL ============ -->
+<div class="overlay" id="shipping-overlay">
+  <div class="modal" style="max-width:720px;">
+    <button class="modal-close" onclick="closeModal('shipping-overlay')">&times;</button>
+    <div class="checkout-body">
+      <h3>Shipping Policy</h3>
+      <p class="checkout-sub">Last updated: August 2026</p>
+      <div style="color:var(--muted); font-size:0.92rem; line-height:1.8;">
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">1. Processing Time</h4>
+        <p>Orders are processed and dispatched within 1–2 business days of confirmation.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">2. Delivery Time</h4>
+        <p>Once dispatched, orders are delivered within 4–5 business days across India.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">3. Shipping Charges</h4>
+        <p>Shipping is completely free on all orders, anywhere in India.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">4. Tracking</h4>
+        <p>A tracking link is shared once your order is dispatched, so you can follow it to your doorstep.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">5. Delays</h4>
+        <p>Occasionally, deliveries may be delayed due to courier disruptions, weather, or regional restrictions beyond our control. We'll help track and resolve any such delay.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">6. Serviceable Areas</h4>
+        <p>We currently ship across all serviceable pincodes in India.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">7. Contact</h4>
+        <p>For shipping questions, reach us at yogeshsharma072004@gmail.com or call +91 78369 50764 / +91 78276 00508.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PRIVACY POLICY MODAL ============ -->
+<div class="overlay" id="privacy-overlay">
+  <div class="modal" style="max-width:720px;">
+    <button class="modal-close" onclick="closeModal('privacy-overlay')">&times;</button>
+    <div class="checkout-body">
+      <h3>Privacy Policy</h3>
+      <p class="checkout-sub">Last updated: August 2026</p>
+      <div style="color:var(--muted); font-size:0.92rem; line-height:1.8;">
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">1. Information We Collect</h4>
+        <p>We collect the name, address, phone number, email, and order details you provide at checkout.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">2. How We Use It</h4>
+        <p>Your information is used solely to process your order, arrange delivery, and contact you about your purchase.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">3. Payment Data</h4>
+        <p>Payments are handled directly by Razorpay. Susathi does not store your card, UPI, or bank account details.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">4. Data Sharing</h4>
+        <p>We never sell your personal data. It is shared only with delivery partners and Razorpay, strictly to fulfill your order.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">5. Data Security</h4>
+        <p>We take reasonable measures to protect your information from unauthorized access.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">6. Your Rights</h4>
+        <p>You can request us to update or delete your personal data at any time by contacting yogeshsharma072004@gmail.com.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">7. Contact</h4>
+        <p>For privacy questions, reach us at yogeshsharma072004@gmail.com or call +91 78369 50764 / +91 78276 00508.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ RETURN & REFUND POLICY MODAL ============ -->
+<div class="overlay" id="returns-overlay">
+  <div class="modal" style="max-width:720px;">
+    <button class="modal-close" onclick="closeModal('returns-overlay')">&times;</button>
+    <div class="checkout-body">
+      <h3>Return &amp; Refund Policy</h3>
+      <p class="checkout-sub">Last updated: August 2026</p>
+      <div style="color:var(--muted); font-size:0.92rem; line-height:1.8;">
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">1. Return Window</h4>
+        <p>Unworn items with original tags and packaging intact can be returned within 7 days of delivery.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">2. Non-Returnable Items</h4>
+        <p>Innerwear, customized or altered items, and products marked "final sale" are not eligible for return.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">3. Return Process</h4>
+        <p>Contact us at yogeshsharma072004@gmail.com or call +91 78369 50764 with your order ID to initiate a return.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">4. Refunds</h4>
+        <p>Once the returned item is inspected and approved, a refund is issued to your original payment method within 5–7 business days.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">5. Exchanges</h4>
+        <p>Size or product exchanges are offered subject to stock availability.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">6. Damaged or Wrong Item</h4>
+        <p>Report any damaged or incorrect item within 48 hours of delivery, along with photos, for a free replacement or full refund.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">7. Contact</h4>
+        <p>For returns and refunds, reach us at yogeshsharma072004@gmail.com or call +91 78369 50764 / +91 78276 00508.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAYMENT POLICY MODAL ============ -->
+<div class="overlay" id="payment-policy-overlay">
+  <div class="modal" style="max-width:720px;">
+    <button class="modal-close" onclick="closeModal('payment-policy-overlay')">&times;</button>
+    <div class="checkout-body">
+      <h3>Payment Policy</h3>
+      <p class="checkout-sub">Last updated: August 2026</p>
+      <div style="color:var(--muted); font-size:0.92rem; line-height:1.8;">
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">1. Accepted Methods</h4>
+        <p>We accept UPI, Credit/Debit Cards, and Net Banking through Razorpay, along with Cash on Delivery.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">2. Security</h4>
+        <p>All online payments are encrypted and processed directly by Razorpay. Susathi never sees or stores your card, UPI, or bank details.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">3. Order Confirmation</h4>
+        <p>An order is confirmed once payment succeeds, or immediately for Cash on Delivery orders.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">4. Failed or Deducted Payments</h4>
+        <p>If an amount is deducted but your order isn't confirmed, it is typically auto-refunded by Razorpay within 5–7 business days. You can also contact us with your payment reference for help.</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">5. Currency</h4>
+        <p>All transactions on this website are processed in Indian Rupees (₹).</p>
+
+        <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">6. Contact</h4>
+        <p>For payment questions, reach us at yogeshsharma072004@gmail.com or call +91 78369 50764 / +91 78276 00508.</p>
       </div>
     </div>
   </div>
@@ -820,11 +996,11 @@ function cartTotal(){
 function openCheckout(){
   if(CART.length===0) return;
   const subtotal = cartTotal();
-  const shipping = subtotal >= 2000 ? 0 : 99;
+  const shipping = 0; // free shipping across India
   const total = subtotal + shipping;
   document.getElementById('checkout-summary').innerHTML = `
     <div class="os-row"><span>Items (${CART.reduce((a,c)=>a+c.qty,0)})</span><span>₹${subtotal.toLocaleString('en-IN')}</span></div>
-    <div class="os-row"><span>Shipping</span><span>${shipping===0?'Free':'₹'+shipping}</span></div>
+    <div class="os-row"><span>Shipping</span><span>Free</span></div>
     <div class="os-row total"><span>Total</span><span>₹${total.toLocaleString('en-IN')}</span></div>
   `;
   document.getElementById('co-error').textContent='';
@@ -892,7 +1068,7 @@ async function placeOrder(){
   }
 
   const subtotal = cartTotal();
-  const shipping = subtotal >= 2000 ? 0 : 99;
+  const shipping = 0; // free shipping across India
   const total = subtotal + shipping;
 
   try{
@@ -948,6 +1124,9 @@ async function placeOrder(){
 /* ================= MODAL HELPERS ================= */
 function closeModal(id){
   document.getElementById(id).classList.remove('show');
+}
+function openModal(id){
+  document.getElementById(id).classList.add('show');
 }
 
 /* ================= ADMIN ================= */
