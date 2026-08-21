@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Susathi — Royal Threads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Playfair+Display:wght@600;700;800&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+:root{
+  --ink:#0a0a0c;
+  --panel:#131316;
+  --panel-2:#1b1b1f;
+  --hairline:#3a3226;
+  --gold:#c9a227;
+  --gold-bright:#e8c766;
+  --burgundy:#5c1a2e;
+  --burgundy-bright:#7d2740;
+  --ivory:#f0ebe0;
+  --muted:#948a76;
+  --danger:#b5433a;
+  --radius:2px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--ink);color:var(--ivory);font-family:'Jost',sans-serif;font-weight:300;overflow-x:hidden;}
+body{min-height:100vh;}
+::selection{background:var(--gold);color:#0a0a0c;}
+h1,h2,h3,h4{font-family:'Playfair Display',serif;font-weight:700;letter-spacing:0.01em;}
+.eyebrow{font-family:'Cormorant Garamond',serif;font-weight:600;letter-spacing:0.35em;text-transform:uppercase;color:var(--gold);font-size:0.75rem;}
+a{color:inherit;text-decoration:none;}
+button{font-family:'Jost',sans-serif;cursor:pointer;border:none;background:none;color:inherit;}
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-thumb{background:var(--hairline);}
+::-webkit-scrollbar-track{background:var(--ink);}
+
+/* ---------- NAV ---------- */
+header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:22px 5vw;background:linear-gradient(to bottom, rgba(10,10,12,0.95), rgba(10,10,12,0));transition:background 0.3s;}
+header.scrolled{background:rgba(10,10,12,0.92);border-bottom:1px solid var(--hairline);backdrop-filter:blur(6px);}
+.logo{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:800;letter-spacing:0.08em;}
+.logo span{color:var(--gold);}
+nav.links{display:flex;gap:36px;font-size:0.85rem;letter-spacing:0.08em;text-transform:uppercase;}
+nav.links a{opacity:0.85;position:relative;padding-bottom:4px;}
+nav.links a:hover{opacity:1;color:var(--gold-bright);}
+.nav-actions{display:flex;align-items:center;gap:22px;}
+.icon-btn{position:relative;font-size:1.1rem;opacity:0.9;}
+.icon-btn:hover{opacity:1;color:var(--gold-bright);}
+.cart-count{position:absolute;top:-8px;right:-10px;background:var(--gold);color:#0a0a0c;font-size:0.65rem;font-weight:600;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
+.admin-toggle{font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);border:1px solid var(--hairline);padding:6px 14px;border-radius:var(--radius);}
+.admin-toggle:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ---------- HERO ---------- */
+.hero{position:relative;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid var(--hairline);}
+#hero-canvas{position:absolute;inset:0;width:100%;height:100%;}
+.hero-content{position:relative;z-index:2;text-align:center;max-width:720px;padding:0 24px;pointer-events:none;}
+.hero-content .eyebrow{display:block;margin-bottom:22px;}
+.hero-content h1{font-size:clamp(2.6rem,6vw,4.6rem);line-height:1.05;margin-bottom:22px;}
+.hero-content h1 em{font-style:italic;color:var(--gold);}
+.hero-content p{color:var(--muted);font-size:1.05rem;max-width:480px;margin:0 auto 34px;line-height:1.6;}
+.hero-cta{pointer-events:all;display:inline-block;padding:15px 38px;border:1px solid var(--gold);color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;font-size:0.8rem;transition:all 0.25s;}
+.hero-cta:hover{background:var(--gold);color:#0a0a0c;}
+.scroll-cue{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);font-size:0.7rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--muted);z-index:2;}
+
+/* ---------- SECTIONS ---------- */
+section{padding:110px 5vw;}
+.section-head{text-align:center;max-width:600px;margin:0 auto 60px;}
+.section-head .eyebrow{display:block;margin-bottom:14px;}
+.section-head h2{font-size:clamp(1.9rem,3.5vw,2.8rem);}
+
+/* Category strip */
+.cat-strip{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:70px;}
+.cat-pill{padding:11px 24px;border:1px solid var(--hairline);font-size:0.8rem;letter-spacing:0.1em;text-transform:uppercase;border-radius:999px;color:var(--muted);transition:all 0.2s;}
+.cat-pill:hover{border-color:var(--gold);color:var(--ivory);}
+.cat-pill.active{background:var(--gold);border-color:var(--gold);color:#0a0a0c;}
+
+/* Product grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:28px;max-width:1400px;margin:0 auto;}
+.card{background:var(--panel);border:1px solid var(--hairline);border-radius:var(--radius);overflow:hidden;transition:transform 0.3s, border-color 0.3s;display:flex;flex-direction:column;}
+.card:hover{transform:translateY(-6px);border-color:var(--gold);}
+.card-media{position:relative;aspect-ratio:1/1;background:radial-gradient(circle at 50% 40%, #201c14 0%, #0e0d0c 75%);display:flex;align-items:center;justify-content:center;}
+.card-media canvas{width:100%;height:100%;}
+.view3d-badge{position:absolute;bottom:10px;right:10px;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold);padding:4px 9px;border-radius:999px;background:rgba(10,10,12,0.7);}
+.card-body{padding:20px 20px 22px;display:flex;flex-direction:column;gap:8px;flex:1;}
+.card-cat{font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);}
+.card-name{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:600;}
+.card-price{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--gold-bright);font-weight:600;margin-top:2px;}
+.card-stock{font-size:0.72rem;color:var(--muted);}
+.card-actions{display:flex;gap:10px;margin-top:12px;}
+.btn{flex:1;padding:11px 0;text-align:center;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;border-radius:var(--radius);transition:all 0.2s;}
+.btn-outline{border:1px solid var(--hairline);color:var(--ivory);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.btn-solid{background:var(--gold);color:#0a0a0c;}
+.btn-solid:hover{background:var(--gold-bright);}
+.btn-solid:disabled{background:var(--hairline);color:var(--muted);cursor:not-allowed;}
+
+/* Empty state */
+.empty{text-align:center;padding:70px 20px;color:var(--muted);}
+.empty h3{color:var(--ivory);margin-bottom:10px;}
+
+/* ---------- MODAL SHARED ---------- */
+.overlay{position:fixed;inset:0;background:rgba(6,6,7,0.75);backdrop-filter:blur(3px);z-index:200;display:none;align-items:center;justify-content:center;padding:24px;}
+.overlay.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--hairline);max-width:920px;width:100%;max-height:88vh;overflow-y:auto;position:relative;}
+.modal-close{position:absolute;top:16px;right:20px;font-size:1.4rem;color:var(--muted);z-index:5;}
+.modal-close:hover{color:var(--gold);}
+
+/* Quick view */
+.qv-body{display:grid;grid-template-columns:1fr 1fr;min-height:480px;}
+@media(max-width:720px){.qv-body{grid-template-columns:1fr;}}
+.qv-stage{background:radial-gradient(circle at 50% 40%, #221d16 0%, #0d0c0b 80%);position:relative;cursor:grab;}
+.qv-stage:active{cursor:grabbing;}
+.qv-hint{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
+.qv-info{padding:44px 40px;display:flex;flex-direction:column;}
+.qv-info .card-cat{margin-bottom:10px;}
+.qv-info h3{font-size:1.8rem;margin-bottom:12px;}
+.qv-info .card-price{font-size:1.7rem;margin-bottom:18px;}
+.qv-desc{color:var(--muted);line-height:1.7;font-size:0.92rem;margin-bottom:26px;}
+.qv-row{display:flex;align-items:center;gap:16px;margin-bottom:22px;}
+.qv-label{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);width:70px;}
+.size-set{display:flex;gap:8px;}
+.size-chip{width:38px;height:38px;border:1px solid var(--hairline);display:flex;align-items:center;justify-content:center;font-size:0.78rem;border-radius:var(--radius);}
+.size-chip.active{border-color:var(--gold);color:var(--gold);}
+.qty-set{display:flex;align-items:center;border:1px solid var(--hairline);}
+.qty-set button{width:34px;height:34px;font-size:1rem;}
+.qty-set span{width:36px;text-align:center;font-size:0.9rem;}
+.qv-info .btn{margin-top:auto;padding:15px;font-size:0.78rem;}
+
+/* Cart drawer */
+.drawer-overlay{position:fixed;inset:0;background:rgba(6,6,7,0.6);z-index:210;display:none;}
+.drawer-overlay.show{display:block;}
+.cart-drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);background:var(--panel);border-left:1px solid var(--hairline);z-index:211;transform:translateX(100%);transition:transform 0.35s ease;display:flex;flex-direction:column;}
+.cart-drawer.show{transform:translateX(0);}
+.cart-head{padding:26px 26px 20px;border-bottom:1px solid var(--hairline);display:flex;justify-content:space-between;align-items:center;}
+.cart-head h3{font-size:1.3rem;}
+.cart-items{flex:1;overflow-y:auto;padding:18px 26px;}
+.cart-item{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--hairline);}
+.cart-item-media{width:64px;height:64px;background:#161513;border-radius:var(--radius);flex-shrink:0;}
+.cart-item-media canvas{width:100%;height:100%;}
+.cart-item-info{flex:1;}
+.cart-item-info .name{font-family:'Playfair Display',serif;font-size:0.95rem;margin-bottom:4px;}
+.cart-item-info .meta{font-size:0.72rem;color:var(--muted);margin-bottom:8px;}
+.cart-item-controls{display:flex;align-items:center;justify-content:space-between;}
+.mini-qty{display:flex;align-items:center;border:1px solid var(--hairline);}
+.mini-qty button{width:24px;height:24px;font-size:0.85rem;}
+.mini-qty span{width:26px;text-align:center;font-size:0.8rem;}
+.remove-link{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+.remove-link:hover{color:var(--danger);}
+.cart-price{font-family:'Cormorant Garamond',serif;color:var(--gold-bright);font-weight:600;}
+.cart-foot{padding:22px 26px 28px;border-top:1px solid var(--hairline);}
+.cart-subtotal{display:flex;justify-content:space-between;margin-bottom:18px;font-size:1rem;}
+.cart-subtotal span:last-child{font-family:'Cormorant Garamond',serif;color:var(--gold-bright);font-size:1.3rem;font-weight:600;}
+
+/* Checkout */
+.checkout-body{padding:44px;}
+.checkout-body h3{font-size:1.7rem;margin-bottom:8px;}
+.checkout-sub{color:var(--muted);font-size:0.85rem;margin-bottom:34px;}
+.co-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:600px){.co-grid{grid-template-columns:1fr;}}
+.field{margin-bottom:16px;}
+.field.full{grid-column:1/-1;}
+.field label{display:block;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.field input,.field textarea,.field select{width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:12px 14px;font-family:'Jost',sans-serif;font-size:0.9rem;border-radius:var(--radius);}
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--gold);}
+.pay-options{display:flex;gap:12px;margin:22px 0 30px;flex-wrap:wrap;}
+.pay-chip{flex:1;min-width:110px;padding:14px;border:1px solid var(--hairline);text-align:center;font-size:0.78rem;letter-spacing:0.05em;border-radius:var(--radius);}
+.pay-chip.active{border-color:var(--gold);color:var(--gold);background:rgba(201,162,39,0.08);}
+.order-summary{background:var(--panel-2);border:1px solid var(--hairline);padding:20px;margin-bottom:26px;border-radius:var(--radius);}
+.os-row{display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;color:var(--muted);}
+.os-row.total{border-top:1px solid var(--hairline);margin-top:8px;padding-top:14px;color:var(--ivory);font-size:1.05rem;}
+.os-row.total span:last-child{color:var(--gold-bright);font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;}
+
+/* Confirmation */
+.confirm-body{padding:60px 44px;text-align:center;}
+.confirm-icon{width:64px;height:64px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 26px;font-size:1.8rem;color:var(--gold);}
+.confirm-body h3{font-size:1.8rem;margin-bottom:12px;}
+.confirm-body p{color:var(--muted);margin-bottom:28px;}
+.order-id{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--gold-bright);letter-spacing:0.05em;margin-bottom:34px;}
+
+/* ---------- ADMIN ---------- */
+#admin-view{display:none;min-height:100vh;padding-top:110px;}
+.admin-gate{max-width:380px;margin:80px auto;text-align:center;}
+.admin-gate h2{margin-bottom:10px;}
+.admin-gate p{color:var(--muted);font-size:0.85rem;margin-bottom:28px;}
+.admin-gate input{width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:13px 16px;text-align:center;letter-spacing:0.2em;border-radius:var(--radius);margin-bottom:16px;}
+.admin-gate .btn{width:100%;padding:13px;}
+.admin-error{color:var(--danger);font-size:0.78rem;margin-bottom:14px;min-height:16px;}
+.admin-dash{max-width:1200px;margin:0 auto;padding:0 5vw 100px;}
+.admin-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:40px;flex-wrap:wrap;gap:16px;}
+.admin-head h2{font-size:1.9rem;}
+.admin-head p{color:var(--muted);font-size:0.85rem;margin-top:6px;}
+.admin-panel{background:var(--panel);border:1px solid var(--hairline);padding:28px;margin-bottom:34px;border-radius:var(--radius);}
+.admin-panel h4{font-size:1.05rem;margin-bottom:20px;color:var(--gold);}
+.admin-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:16px;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--hairline);}
+td{padding:12px;border-bottom:1px solid var(--hairline);font-size:0.85rem;vertical-align:middle;}
+td input, td select{background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:8px 10px;font-size:0.82rem;border-radius:var(--radius);width:100%;}
+.table-wrap{overflow-x:auto;}
+.icon-action{padding:6px 10px;border:1px solid var(--hairline);font-size:0.7rem;letter-spacing:0.05em;text-transform:uppercase;border-radius:var(--radius);margin-right:6px;}
+.icon-action:hover{border-color:var(--gold);color:var(--gold);}
+.icon-action.danger:hover{border-color:var(--danger);color:var(--danger);}
+.save-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--gold);color:#0a0a0c;padding:12px 24px;border-radius:999px;font-size:0.8rem;letter-spacing:0.05em;opacity:0;transition:all 0.3s;z-index:400;pointer-events:none;}
+.save-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Footer */
+footer{border-top:1px solid var(--hairline);padding:50px 5vw;text-align:center;color:var(--muted);font-size:0.8rem;}
+footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
+
+@media(max-width:640px){
+  nav.links{display:none;}
+  section{padding:70px 6vw;}
+}
+</style>
+</head>
+<body>
+
+<header id="site-header">
+  <div class="logo">SUSATHI<span>.</span></div>
+  <nav class="links">
+    <a href="#collection">Collection</a>
+    <a href="#winter">Winter</a>
+    <a href="#about">House</a>
+  </nav>
+  <div class="nav-actions">
+    <button class="admin-toggle" onclick="showAdmin()">Admin</button>
+    <button class="icon-btn" onclick="openCart()">🛍
+      <span class="cart-count" id="cart-count" style="display:none;">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- ============ STOREFRONT ============ -->
+<div id="store-view">
+
+  <section class="hero">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-content">
+      <span class="eyebrow">Susathi House</span>
+      <h1>Royalty in <em>Every</em><br>Thread</h1>
+      <p>Tailored casual and formal wear, cut for those who dress with intent. Shirts, lowers, and a winter collection built to last.</p>
+      <a href="#collection" class="hero-cta">Explore the Collection</a>
+    </div>
+    <div class="scroll-cue">Scroll</div>
+  </section>
+
+  <section id="collection">
+    <div class="section-head">
+      <span class="eyebrow">The Collection</span>
+      <h2>Dressed for Every Room You Walk Into</h2>
+    </div>
+    <div class="cat-strip" id="cat-strip"></div>
+    <div class="grid" id="product-grid"></div>
+  </section>
+
+  <section id="about" style="background:var(--panel);border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);">
+    <div class="section-head" style="margin-bottom:0;">
+      <span class="eyebrow">The House</span>
+      <h2>Cut Once, Worn for Years</h2>
+      <p style="color:var(--muted);margin-top:18px;line-height:1.7;">Susathi is built on a simple idea — clothing should feel deliberate. Every piece in this collection is chosen for how it moves through an ordinary week: boardrooms, weekends, and the cold months in between.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span class="logo">SUSATHI<span style="color:var(--gold);">.</span></span>
+    <p>&copy; 2026 Susathi. Crafted for those who dress with intent.</p>
+  </footer>
+
+</div>
+
+<!-- ============ QUICK VIEW MODAL ============ -->
+<div class="overlay" id="qv-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('qv-overlay')">&times;</button>
+    <div class="qv-body">
+      <div class="qv-stage" id="qv-stage">
+        <div class="qv-hint">Drag to rotate — 3D view</div>
+      </div>
+      <div class="qv-info">
+        <div class="card-cat" id="qv-cat">Category</div>
+        <h3 id="qv-name">Product name</h3>
+        <div class="card-price" id="qv-price">₹0</div>
+        <p class="qv-desc" id="qv-desc">Description</p>
+        <div class="qv-row">
+          <span class="qv-label">Size</span>
+          <div class="size-set" id="qv-sizes"></div>
+        </div>
+        <div class="qv-row">
+          <span class="qv-label">Qty</span>
+          <div class="qty-set">
+            <button onclick="qvQty(-1)">−</button>
+            <span id="qv-qty">1</span>
+            <button onclick="qvQty(1)">+</button>
+          </div>
+        </div>
+        <button class="btn btn-solid" id="qv-add-btn" onclick="addQvToCart()">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CART DRAWER ============ -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cart-drawer">
+  <div class="cart-head">
+    <h3>Your Bag</h3>
+    <button class="modal-close" style="position:static;" onclick="closeCart()">&times;</button>
+  </div>
+  <div class="cart-items" id="cart-items"></div>
+  <div class="cart-foot">
+    <div class="cart-subtotal"><span>Subtotal</span><span id="cart-subtotal">₹0</span></div>
+    <button class="btn btn-solid" style="width:100%;padding:15px;" id="checkout-btn" onclick="openCheckout()">Checkout</button>
+  </div>
+</div>
+
+<!-- ============ CHECKOUT MODAL ============ -->
+<div class="overlay" id="checkout-overlay">
+  <div class="modal" style="max-width:640px;">
+    <button class="modal-close" onclick="closeModal('checkout-overlay')">&times;</button>
+    <div class="checkout-body">
+      <h3>Checkout</h3>
+      <p class="checkout-sub">Enter your details to complete the order.</p>
+      <div class="order-summary" id="checkout-summary"></div>
+      <div class="co-grid">
+        <div class="field full"><label>Full Name</label><input id="co-name" placeholder="Your full name"></div>
+        <div class="field"><label>Phone</label><input id="co-phone" placeholder="10-digit mobile number"></div>
+        <div class="field"><label>Email</label><input id="co-email" placeholder="you@example.com"></div>
+        <div class="field full"><label>Address</label><textarea id="co-address" rows="2" placeholder="House no, street, area"></textarea></div>
+        <div class="field"><label>City</label><input id="co-city" placeholder="City"></div>
+        <div class="field"><label>Pincode</label><input id="co-pincode" placeholder="6-digit pincode"></div>
+      </div>
+      <label style="display:block;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Payment Method</label>
+      <div class="pay-options" id="pay-options">
+        <div class="pay-chip active" data-pay="upi" onclick="selectPay('upi')">UPI</div>
+        <div class="pay-chip" data-pay="card" onclick="selectPay('card')">Card</div>
+        <div class="pay-chip" data-pay="cod" onclick="selectPay('cod')">Cash on Delivery</div>
+      </div>
+      <div id="co-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:16px;min-height:18px;"></div>
+      <button class="btn btn-solid" style="width:100%;padding:16px;" onclick="placeOrder()">Place Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ORDER CONFIRMATION ============ -->
+<div class="overlay" id="confirm-overlay">
+  <div class="modal" style="max-width:480px;">
+    <button class="modal-close" onclick="closeModal('confirm-overlay'); closeCart();">&times;</button>
+    <div class="confirm-body">
+      <div class="confirm-icon">✓</div>
+      <h3>Order Placed</h3>
+      <p>Thank you for shopping with Susathi. A confirmation has been noted for your order below.</p>
+      <div class="order-id" id="confirm-order-id">SUS-000000</div>
+      <button class="btn btn-outline" style="padding:13px 30px;" onclick="closeModal('confirm-overlay'); closeCart();">Continue Shopping</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ADMIN VIEW ============ -->
+<div id="admin-view">
+  <div class="admin-gate" id="admin-gate">
+    <h2>Admin Access</h2>
+    <p>Enter the store passcode to manage products and pricing.</p>
+    <div class="admin-error" id="admin-error"></div>
+    <input type="password" id="admin-pass" placeholder="Passcode" onkeydown="if(event.key==='Enter')tryAdminLogin()">
+    <button class="btn btn-solid" onclick="tryAdminLogin()">Enter Admin Panel</button>
+    <p style="margin-top:18px;font-size:0.72rem;">Default passcode: <b style="color:var(--gold);">susathi-admin</b> &nbsp;(change it in the code before going live)</p>
+    <button class="btn btn-outline" style="width:100%;padding:12px;margin-top:20px;" onclick="hideAdmin()">Back to Store</button>
+  </div>
+
+  <div class="admin-dash" id="admin-dash" style="display:none;">
+    <div class="admin-head">
+      <div>
+        <h2>Product Management</h2>
+        <p>Add, edit, or remove products — changes apply to your storefront instantly.</p>
+      </div>
+      <button class="btn btn-outline" style="padding:12px 22px;" onclick="hideAdmin()">Back to Store</button>
+    </div>
+
+    <div class="admin-panel">
+      <h4>Add New Product</h4>
+      <div class="admin-form-grid">
+        <input id="np-name" placeholder="Product name">
+        <select id="np-cat">
+          <option value="Formal">Formal</option>
+          <option value="Casual">Casual</option>
+          <option value="T-Shirt">T-Shirt</option>
+          <option value="Pants">Pants</option>
+          <option value="Lower">Lower</option>
+          <option value="Winter">Winter / Hoodie</option>
+        </select>
+        <input id="np-price" type="number" placeholder="Price (₹)">
+        <input id="np-stock" type="number" placeholder="Stock qty">
+      </div>
+      <input id="np-desc" placeholder="Short description" style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:12px 14px;border-radius:var(--radius);margin-bottom:16px;">
+      <button class="btn btn-solid" style="padding:13px 30px;" onclick="adminAddProduct()">Add Product</button>
+    </div>
+
+    <div class="admin-panel">
+      <h4>Current Catalog</h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Category</th><th>Price (₹)</th><th>Stock</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="admin-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="save-toast" id="save-toast">Changes saved</div>
+
+<script>
+/* ================= DATA ================= */
+const DEFAULT_PRODUCTS = [
+  {id:'p1', name:'Royal Oxford Formal Shirt', category:'Formal', price:1499, stock:24, desc:'Crisp oxford weave in deep navy, cut for a tailored silhouette that holds through a long day.'},
+  {id:'p2', name:'Classic White Casual Shirt', category:'Casual', price:999, stock:40, desc:'Breathable cotton in pure white, built as the one shirt that works with anything.'},
+  {id:'p3', name:'Midnight Formal Blazer Shirt', category:'Formal', price:1899, stock:15, desc:'Structured shoulders and a matte-black finish for evenings that call for more.'},
+  {id:'p4', name:'Ivory Linen Shirt', category:'Casual', price:1199, stock:30, desc:'Lightweight linen with a relaxed drape, made for warm afternoons.'},
+  {id:'p5', name:'Everyday Crew T-Shirt', category:'T-Shirt', price:599, stock:60, desc:'Heavyweight cotton crew neck in a fit that holds its shape wash after wash.'},
+  {id:'p6', name:'Graphic Print Tee', category:'T-Shirt', price:649, stock:45, desc:'Minimal Susathi crest print on soft-hand combed cotton.'},
+  {id:'p7', name:'Weekend Polo Tee', category:'T-Shirt', price:799, stock:35, desc:'Pique cotton polo with a clean, unbothered fit.'},
+  {id:'p8', name:'Charcoal Slim Fit Trousers', category:'Pants', price:1299, stock:28, desc:'Slim tailored trouser in stretch charcoal wool-blend, office to dinner.'},
+  {id:'p9', name:'Formal Grey Trousers', category:'Pants', price:1399, stock:20, desc:'Classic pleat-front grey formal trouser with a full break.'},
+  {id:'p10', name:'Comfort Fit Joggers', category:'Lower', price:899, stock:50, desc:'Tapered jogger in brushed fleece, built for the in-between hours.'},
+  {id:'p11', name:'Relaxed Cargo Lower', category:'Lower', price:999, stock:33, desc:'Utility cargo with reinforced pockets and a relaxed leg.'},
+  {id:'p12', name:'Alpine Fleece Hoodie', category:'Winter', price:1799, stock:22, desc:'Heavyweight fleece hoodie built to hold heat through the coldest months.'},
+  {id:'p13', name:'Royal Zip Hoodie', category:'Winter', price:1999, stock:18, desc:'Full-zip hoodie in brushed cotton with a gold-stitched crest.'},
+  {id:'p14', name:'Wool Blend Overcoat', category:'Winter', price:2999, stock:10, desc:'Long wool-blend overcoat, the one coat your winter wardrobe is missing.'},
+];
+
+let PRODUCTS = [];
+let CART = [];
+let currentCategory = 'All';
+let qvProduct = null;
+let qvSize = 'M';
+let qvQtyVal = 1;
+let currentPayMethod = 'upi';
+const ADMIN_PASSCODE = 'susathi-admin';
+
+/* ================= RAZORPAY CONFIG =================
+   RAZORPAY_KEY_ID is your public Test Key — safe to keep here.
+   BACKEND_URL must point to your deployed backend (see susathi-backend/README.md).
+   Until you deploy the backend, leave BACKEND_URL as-is and checkout will fall
+   back to the simulated flow so the rest of the site keeps working. */
+const RAZORPAY_KEY_ID = 'rzp_test_TSMThxXZVXTGas';
+const BACKEND_URL = ''; // same domain on Vercel — requests go to /api/...
+
+const CATS = ['All','Formal','Casual','T-Shirt','Pants','Lower','Winter'];
+
+/* ================= STORAGE ================= */
+async function loadData(){
+  try{
+    const p = await window.storage.get('susathi-products', false);
+    PRODUCTS = p ? JSON.parse(p.value) : JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+  }catch(e){
+    PRODUCTS = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+  }
+  try{
+    const c = await window.storage.get('susathi-cart', false);
+    CART = c ? JSON.parse(c.value) : [];
+  }catch(e){ CART = []; }
+  renderCategoryStrip();
+  renderProducts();
+  renderCart();
+}
+async function saveProducts(){
+  try{ await window.storage.set('susathi-products', JSON.stringify(PRODUCTS), false); }catch(e){ console.error(e); }
+}
+async function saveCart(){
+  try{ await window.storage.set('susathi-cart', JSON.stringify(CART), false); }catch(e){ console.error(e); }
+}
+function toast(msg){
+  const t = document.getElementById('save-toast');
+  t.textContent = msg || 'Changes saved';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+/* ================= ICON DRAWING (category art) ================= */
+function drawIcon(ctx, w, h, category){
+  ctx.clearRect(0,0,w,h);
+  ctx.save();
+  ctx.translate(w/2,h/2);
+  ctx.strokeStyle = '#c9a227';
+  ctx.lineWidth = w*0.02;
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  const s = w*0.32;
+  ctx.beginPath();
+  if(category==='Formal' || category==='Casual'){
+    // shirt shape
+    ctx.moveTo(-s*0.5,-s*0.9); ctx.lineTo(-s*0.9,-s*0.5); ctx.lineTo(-s*0.6,-s*0.3);
+    ctx.lineTo(-s*0.6,s*1.0); ctx.lineTo(s*0.6,s*1.0); ctx.lineTo(s*0.6,-s*0.3);
+    ctx.lineTo(s*0.9,-s*0.5); ctx.lineTo(s*0.5,-s*0.9);
+    ctx.quadraticCurveTo(0,-s*0.6,-s*0.5,-s*0.9);
+    ctx.moveTo(0,-s*0.9); ctx.lineTo(0,s*0.9);
+  } else if(category==='T-Shirt'){
+    ctx.moveTo(-s*0.45,-s*0.85); ctx.lineTo(-s*0.95,-s*0.35); ctx.lineTo(-s*0.55,-s*0.1);
+    ctx.lineTo(-s*0.55,s*1.0); ctx.lineTo(s*0.55,s*1.0); ctx.lineTo(s*0.55,-s*0.1);
+    ctx.lineTo(s*0.95,-s*0.35); ctx.lineTo(s*0.45,-s*0.85);
+    ctx.quadraticCurveTo(0,-s*0.55,-s*0.45,-s*0.85);
+  } else if(category==='Pants' || category==='Lower'){
+    ctx.moveTo(-s*0.55,-s*0.9); ctx.lineTo(-s*0.55,s*0.1); ctx.lineTo(-s*0.75,s*1.0);
+    ctx.lineTo(-s*0.25,s*1.0); ctx.lineTo(0,s*0.15); ctx.lineTo(s*0.25,s*1.0);
+    ctx.lineTo(s*0.75,s*1.0); ctx.lineTo(s*0.55,s*0.1); ctx.lineTo(s*0.55,-s*0.9);
+    ctx.closePath();
+    ctx.moveTo(-s*0.55,-s*0.55); ctx.lineTo(s*0.55,-s*0.55);
+  } else if(category==='Winter'){
+    ctx.moveTo(-s*0.5,-s*0.55); ctx.lineTo(-s*0.9,-s*0.15); ctx.lineTo(-s*0.6,s*0.05);
+    ctx.lineTo(-s*0.6,s*1.0); ctx.lineTo(s*0.6,s*1.0); ctx.lineTo(s*0.6,s*0.05);
+    ctx.lineTo(s*0.9,-s*0.15); ctx.lineTo(s*0.5,-s*0.55);
+    ctx.moveTo(-s*0.5,-s*0.55); ctx.quadraticCurveTo(0,-s*1.15,s*0.5,-s*0.55);
+    ctx.moveTo(0,-s*0.55); ctx.lineTo(0,s*0.3);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ================= HERO 3D SCENE (rotating monogram) ================= */
+let heroScene, heroCamera, heroRenderer, heroMesh, heroFrame;
+function initHero(){
+  const canvas = document.getElementById('hero-canvas');
+  heroScene = new THREE.Scene();
+  heroCamera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+  heroCamera.position.set(0,0,8);
+  heroRenderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  heroRenderer.setSize(window.innerWidth, window.innerHeight);
+  heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+  heroScene.add(ambient);
+  const dir = new THREE.DirectionalLight(0xe8c766, 1.2);
+  dir.position.set(4,6,5);
+  heroScene.add(dir);
+  const dir2 = new THREE.DirectionalLight(0x5c1a2e, 0.8);
+  dir2.position.set(-5,-3,2);
+  heroScene.add(dir2);
+
+  // Draw an "S" crest onto a canvas texture, then wrap around a torus-like ring + central emblem
+  const group = new THREE.Group();
+
+  const ringGeo = new THREE.TorusGeometry(2.1, 0.06, 16, 100);
+  const ringMat = new THREE.MeshStandardMaterial({color:0xc9a227, metalness:0.7, roughness:0.3});
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  group.add(ring);
+
+  const ring2Geo = new THREE.TorusGeometry(2.4, 0.02, 16, 100);
+  const ring2 = new THREE.Mesh(ring2Geo, new THREE.MeshStandardMaterial({color:0x7d2740, metalness:0.6, roughness:0.4}));
+  group.add(ring2);
+
+  // Central monogram plane
+  const cv = document.createElement('canvas'); cv.width=512; cv.height=512;
+  const cctx = cv.getContext('2d');
+  cctx.clearRect(0,0,512,512);
+  cctx.fillStyle='#e8c766';
+  cctx.font='700 340px "Playfair Display", serif';
+  cctx.textAlign='center'; cctx.textBaseline='middle';
+  cctx.fillText('S',256,290);
+  const tex = new THREE.CanvasTexture(cv);
+  const planeMat = new THREE.MeshBasicMaterial({map:tex, transparent:true});
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.6), planeMat);
+  group.add(plane);
+
+  heroMesh = group;
+  heroScene.add(group);
+  heroFrame = requestAnimationFrame(animateHero);
+}
+let heroMouseX = 0, heroMouseY = 0;
+function animateHero(){
+  heroFrame = requestAnimationFrame(animateHero);
+  if(heroMesh){
+    heroMesh.rotation.y += 0.0035;
+    heroMesh.rotation.x = heroMouseY*0.15;
+    heroMesh.rotation.z = heroMouseX*0.05;
+  }
+  heroRenderer.render(heroScene, heroCamera);
+}
+window.addEventListener('mousemove', (e)=>{
+  heroMouseX = (e.clientX/window.innerWidth - 0.5);
+  heroMouseY = (e.clientY/window.innerHeight - 0.5);
+});
+window.addEventListener('resize', ()=>{
+  if(!heroRenderer) return;
+  heroCamera.aspect = window.innerWidth/window.innerHeight;
+  heroCamera.updateProjectionMatrix();
+  heroRenderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ================= QUICK VIEW 3D SCENE (drag to rotate garment card) ================= */
+let qvScene, qvCamera, qvRenderer, qvMesh;
+let qvDragging=false, qvLastX=0, qvRotY=0;
+function initQvScene(){
+  const stage = document.getElementById('qv-stage');
+  qvScene = new THREE.Scene();
+  qvCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 50);
+  qvCamera.position.set(0,0,5.2);
+  qvRenderer = new THREE.WebGLRenderer({alpha:true, antialias:true});
+  qvRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  stage.appendChild(qvRenderer.domElement);
+  qvRenderer.domElement.style.width='100%';
+  qvRenderer.domElement.style.height='100%';
+  qvRenderer.domElement.style.display='block';
+
+  qvScene.add(new THREE.AmbientLight(0xffffff,0.6));
+  const d = new THREE.DirectionalLight(0xe8c766,1.1); d.position.set(3,4,5); qvScene.add(d);
+  const d2 = new THREE.DirectionalLight(0x7d2740,0.7); d2.position.set(-4,-2,3); qvScene.add(d2);
+
+  const geo = new THREE.BoxGeometry(2.6,2.6,0.15);
+  const mat = new THREE.MeshStandardMaterial({color:0x1b1b1f, metalness:0.2, roughness:0.6});
+  qvMesh = new THREE.Mesh(geo, [mat,mat,mat,mat, mat, mat]);
+  qvScene.add(qvMesh);
+
+  stage.addEventListener('mousedown', e=>{qvDragging=true; qvLastX=e.clientX;});
+  window.addEventListener('mouseup', ()=>qvDragging=false);
+  window.addEventListener('mousemove', e=>{
+    if(!qvDragging) return;
+    const dx = e.clientX - qvLastX; qvLastX = e.clientX;
+    qvRotY += dx*0.01;
+  });
+  stage.addEventListener('touchstart', e=>{qvDragging=true; qvLastX=e.touches[0].clientX;});
+  window.addEventListener('touchend', ()=>qvDragging=false);
+  window.addEventListener('touchmove', e=>{
+    if(!qvDragging) return;
+    const dx = e.touches[0].clientX - qvLastX; qvLastX = e.touches[0].clientX;
+    qvRotY += dx*0.01;
+  });
+
+  resizeQvRenderer();
+  animateQv();
+}
+function resizeQvRenderer(){
+  const stage = document.getElementById('qv-stage');
+  const size = Math.min(stage.clientWidth, stage.clientHeight) || 400;
+  if(qvRenderer){
+    qvRenderer.setSize(stage.clientWidth, stage.clientHeight);
+    qvCamera.aspect = stage.clientWidth/stage.clientHeight;
+    qvCamera.updateProjectionMatrix();
+  }
+}
+function animateQv(){
+  requestAnimationFrame(animateQv);
+  if(qvMesh){
+    if(!qvDragging) qvRotY += 0.004;
+    qvMesh.rotation.y = qvRotY;
+  }
+  if(qvRenderer) qvRenderer.render(qvScene, qvCamera);
+}
+function updateQvTexture(category){
+  const cv = document.createElement('canvas'); cv.width=512; cv.height=512;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#161513'; ctx.fillRect(0,0,512,512);
+  drawIcon(ctx,512,512,category);
+  const tex = new THREE.CanvasTexture(cv);
+  const frontMat = new THREE.MeshStandardMaterial({map:tex, metalness:0.15, roughness:0.7});
+  const sideMat = new THREE.MeshStandardMaterial({color:0x1b1b1f, metalness:0.2, roughness:0.7});
+  qvMesh.material = [sideMat,sideMat,sideMat,sideMat, frontMat, frontMat];
+}
+
+/* ================= RENDER: CATEGORY STRIP ================= */
+function renderCategoryStrip(){
+  const strip = document.getElementById('cat-strip');
+  strip.innerHTML = CATS.map(c=>`<button class="cat-pill ${c===currentCategory?'active':''}" onclick="setCategory('${c}')">${c}</button>`).join('');
+}
+function setCategory(c){
+  currentCategory = c;
+  renderCategoryStrip();
+  renderProducts();
+}
+
+/* ================= RENDER: PRODUCT GRID ================= */
+function renderProducts(){
+  const grid = document.getElementById('product-grid');
+  const list = currentCategory==='All' ? PRODUCTS : PRODUCTS.filter(p=>p.category===currentCategory);
+  if(list.length===0){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1;"><h3>Nothing here yet</h3><p>Add products for this category from the Admin panel.</p></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(p=>`
+    <div class="card">
+      <div class="card-media">
+        <canvas id="canvas-${p.id}" width="300" height="300"></canvas>
+        <div class="view3d-badge">3D View</div>
+      </div>
+      <div class="card-body">
+        <div class="card-cat">${p.category}</div>
+        <div class="card-name">${escapeHtml(p.name)}</div>
+        <div class="card-price">₹${p.price.toLocaleString('en-IN')}</div>
+        <div class="card-stock">${p.stock>0? p.stock+' in stock' : 'Out of stock'}</div>
+        <div class="card-actions">
+          <button class="btn btn-outline" onclick="openQuickView('${p.id}')">Quick View</button>
+          <button class="btn btn-solid" ${p.stock<=0?'disabled':''} onclick="quickAdd('${p.id}')">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  list.forEach(p=>{
+    const c = document.getElementById('canvas-'+p.id);
+    if(c) drawIcon(c.getContext('2d'), c.width, c.height, p.category);
+  });
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ================= QUICK VIEW MODAL ================= */
+function openQuickView(id){
+  qvProduct = PRODUCTS.find(p=>p.id===id);
+  if(!qvProduct) return;
+  qvSize = 'M'; qvQtyVal = 1;
+  document.getElementById('qv-cat').textContent = qvProduct.category;
+  document.getElementById('qv-name').textContent = qvProduct.name;
+  document.getElementById('qv-price').textContent = '₹'+qvProduct.price.toLocaleString('en-IN');
+  document.getElementById('qv-desc').textContent = qvProduct.desc;
+  document.getElementById('qv-qty').textContent = '1';
+  const sizes = ['S','M','L','XL','XXL'];
+  document.getElementById('qv-sizes').innerHTML = sizes.map(s=>`<div class="size-chip ${s===qvSize?'active':''}" data-size="${s}" onclick="setQvSize('${s}')">${s}</div>`).join('');
+  const addBtn = document.getElementById('qv-add-btn');
+  if(qvProduct.stock<=0){ addBtn.disabled=true; addBtn.textContent='Out of Stock'; }
+  else{ addBtn.disabled=false; addBtn.textContent='Add to Cart'; }
+  document.getElementById('qv-overlay').classList.add('show');
+  if(!qvRenderer) initQvScene();
+  setTimeout(()=>{ resizeQvRenderer(); updateQvTexture(qvProduct.category); }, 30);
+}
+function setQvSize(s){
+  qvSize = s;
+  document.querySelectorAll('.size-chip').forEach(el=>el.classList.toggle('active', el.dataset.size===s));
+}
+function qvQty(delta){
+  qvQtyVal = Math.max(1, qvQtyVal+delta);
+  document.getElementById('qv-qty').textContent = qvQtyVal;
+}
+function addQvToCart(){
+  if(!qvProduct || qvProduct.stock<=0) return;
+  addToCart(qvProduct.id, qvSize, qvQtyVal);
+  closeModal('qv-overlay');
+  openCart();
+}
+function quickAdd(id){
+  addToCart(id, 'M', 1);
+  openCart();
+}
+
+/* ================= CART ================= */
+function addToCart(id, size, qty){
+  const existing = CART.find(c=>c.id===id && c.size===size);
+  if(existing){ existing.qty += qty; }
+  else{ CART.push({id, size, qty}); }
+  saveCart();
+  renderCart();
+}
+function renderCart(){
+  const wrap = document.getElementById('cart-items');
+  const countEl = document.getElementById('cart-count');
+  const totalCount = CART.reduce((a,c)=>a+c.qty,0);
+  countEl.style.display = totalCount>0 ? 'flex' : 'none';
+  countEl.textContent = totalCount;
+
+  if(CART.length===0){
+    wrap.innerHTML = `<div class="empty"><h3>Your bag is empty</h3><p>Explore the collection to add something.</p></div>`;
+    document.getElementById('cart-subtotal').textContent = '₹0';
+    document.getElementById('checkout-btn').disabled = true;
+    return;
+  }
+  document.getElementById('checkout-btn').disabled = false;
+  let subtotal = 0;
+  wrap.innerHTML = CART.map((c,idx)=>{
+    const p = PRODUCTS.find(pp=>pp.id===c.id);
+    if(!p) return '';
+    subtotal += p.price*c.qty;
+    return `
+    <div class="cart-item">
+      <div class="cart-item-media"><canvas id="cart-canvas-${idx}" width="64" height="64"></canvas></div>
+      <div class="cart-item-info">
+        <div class="name">${escapeHtml(p.name)}</div>
+        <div class="meta">Size ${c.size} · <span class="cart-price">₹${p.price.toLocaleString('en-IN')}</span></div>
+        <div class="cart-item-controls">
+          <div class="mini-qty">
+            <button onclick="changeCartQty(${idx},-1)">−</button>
+            <span>${c.qty}</span>
+            <button onclick="changeCartQty(${idx},1)">+</button>
+          </div>
+          <button class="remove-link" onclick="removeCartItem(${idx})">Remove</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('cart-subtotal').textContent = '₹'+subtotal.toLocaleString('en-IN');
+  CART.forEach((c,idx)=>{
+    const p = PRODUCTS.find(pp=>pp.id===c.id);
+    const cv = document.getElementById('cart-canvas-'+idx);
+    if(cv && p) drawIcon(cv.getContext('2d'), cv.width, cv.height, p.category);
+  });
+}
+function changeCartQty(idx, delta){
+  CART[idx].qty += delta;
+  if(CART[idx].qty<=0) CART.splice(idx,1);
+  saveCart(); renderCart();
+}
+function removeCartItem(idx){
+  CART.splice(idx,1);
+  saveCart(); renderCart();
+}
+function openCart(){
+  document.getElementById('cart-drawer').classList.add('show');
+  document.getElementById('drawer-overlay').classList.add('show');
+}
+function closeCart(){
+  document.getElementById('cart-drawer').classList.remove('show');
+  document.getElementById('drawer-overlay').classList.remove('show');
+}
+
+/* ================= CHECKOUT ================= */
+function cartTotal(){
+  return CART.reduce((sum,c)=>{
+    const p = PRODUCTS.find(pp=>pp.id===c.id);
+    return sum + (p ? p.price*c.qty : 0);
+  },0);
+}
+function openCheckout(){
+  if(CART.length===0) return;
+  const subtotal = cartTotal();
+  const shipping = subtotal >= 2000 ? 0 : 99;
+  const total = subtotal + shipping;
+  document.getElementById('checkout-summary').innerHTML = `
+    <div class="os-row"><span>Items (${CART.reduce((a,c)=>a+c.qty,0)})</span><span>₹${subtotal.toLocaleString('en-IN')}</span></div>
+    <div class="os-row"><span>Shipping</span><span>${shipping===0?'Free':'₹'+shipping}</span></div>
+    <div class="os-row total"><span>Total</span><span>₹${total.toLocaleString('en-IN')}</span></div>
+  `;
+  document.getElementById('co-error').textContent='';
+  document.getElementById('checkout-overlay').classList.add('show');
+}
+function selectPay(method){
+  currentPayMethod = method;
+  document.querySelectorAll('.pay-chip').forEach(el=>el.classList.toggle('active', el.dataset.pay===method));
+}
+function validateCheckoutForm(){
+  const name = document.getElementById('co-name').value.trim();
+  const phone = document.getElementById('co-phone').value.trim();
+  const address = document.getElementById('co-address').value.trim();
+  const city = document.getElementById('co-city').value.trim();
+  const pincode = document.getElementById('co-pincode').value.trim();
+  const err = document.getElementById('co-error');
+  if(!name || !phone || !address || !city || !pincode){
+    err.textContent = 'Please fill in all required fields.';
+    return null;
+  }
+  if(!/^\d{10}$/.test(phone)){
+    err.textContent = 'Enter a valid 10-digit phone number.';
+    return null;
+  }
+  err.textContent='';
+  return {name, phone, email: document.getElementById('co-email').value.trim(), address, city, pincode};
+}
+
+function finalizeOrder(){
+  // Shared "success" path for both COD and verified online payments.
+  CART.forEach(c=>{
+    const p = PRODUCTS.find(pp=>pp.id===c.id);
+    if(p) p.stock = Math.max(0, p.stock - c.qty);
+  });
+  saveProducts();
+  const orderId = 'SUS-'+Math.floor(100000+Math.random()*900000);
+  document.getElementById('confirm-order-id').textContent = orderId;
+  CART = [];
+  saveCart();
+  renderCart();
+  renderProducts();
+  closeModal('checkout-overlay');
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+
+function backendConfigured(){
+  return true; // Vercel serves /api/* from the same domain once deployed.
+}
+
+async function placeOrder(){
+  const details = validateCheckoutForm();
+  if(!details) return;
+  const err = document.getElementById('co-error');
+
+  // Cash on Delivery never needs Razorpay.
+  if(currentPayMethod === 'cod'){
+    finalizeOrder();
+    return;
+  }
+
+  // Card / UPI go through Razorpay Checkout, backed by your server.
+  if(!backendConfigured()){
+    err.textContent = 'Online payment isn\'t connected yet — for now, choose Cash on Delivery to test checkout.';
+    return;
+  }
+
+  const subtotal = cartTotal();
+  const shipping = subtotal >= 2000 ? 0 : 99;
+  const total = subtotal + shipping;
+
+  try{
+    err.textContent = 'Contacting payment server...';
+    const orderRes = await fetch(BACKEND_URL + '/api/create-order', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({amount: total, receipt: 'susathi_'+Date.now()})
+    });
+    if(!orderRes.ok) throw new Error('order-failed');
+    const order = await orderRes.json();
+    err.textContent = '';
+
+    const rzp = new Razorpay({
+      key: RAZORPAY_KEY_ID,
+      amount: order.amount,
+      currency: order.currency,
+      name: 'Susathi',
+      description: 'Order payment',
+      order_id: order.id,
+      prefill: { name: details.name, email: details.email, contact: details.phone },
+      theme: { color: '#c9a227' },
+      handler: async function(response){
+        try{
+          const verifyRes = await fetch(BACKEND_URL + '/api/verify-payment', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(response)
+          });
+          const result = await verifyRes.json();
+          if(result.verified){
+            finalizeOrder();
+          }else{
+            err.textContent = 'Payment could not be verified. Please try again or contact support.';
+          }
+        }catch(e){
+          err.textContent = 'Could not confirm payment with the server. Please try again.';
+        }
+      },
+      modal:{
+        ondismiss: function(){ err.textContent = 'Payment window closed.'; }
+      }
+    });
+    rzp.on('payment.failed', function(){
+      err.textContent = 'Payment failed. Please try again.';
+    });
+    rzp.open();
+  }catch(e){
+    err.textContent = 'Could not reach the payment server. Check that your backend is deployed and BACKEND_URL is set correctly.';
+  }
+}
+
+/* ================= MODAL HELPERS ================= */
+function closeModal(id){
+  document.getElementById(id).classList.remove('show');
+}
+
+/* ================= ADMIN ================= */
+function showAdmin(){
+  document.getElementById('store-view').style.display='none';
+  document.getElementById('admin-view').style.display='block';
+  document.getElementById('admin-gate').style.display='block';
+  document.getElementById('admin-dash').style.display='none';
+  document.getElementById('admin-pass').value='';
+  document.getElementById('admin-error').textContent='';
+  window.scrollTo(0,0);
+}
+function hideAdmin(){
+  document.getElementById('admin-view').style.display='none';
+  document.getElementById('store-view').style.display='block';
+  renderProducts();
+}
+function tryAdminLogin(){
+  const val = document.getElementById('admin-pass').value;
+  if(val === ADMIN_PASSCODE){
+    document.getElementById('admin-gate').style.display='none';
+    document.getElementById('admin-dash').style.display='block';
+    renderAdminTable();
+  }else{
+    document.getElementById('admin-error').textContent = 'Incorrect passcode. Try again.';
+  }
+}
+function renderAdminTable(){
+  const body = document.getElementById('admin-table-body');
+  if(PRODUCTS.length===0){
+    body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No products yet. Add your first one above.</td></tr>`;
+    return;
+  }
+  body.innerHTML = PRODUCTS.map((p,idx)=>`
+    <tr>
+      <td><input value="${escapeAttr(p.name)}" onchange="updateProductField('${p.id}','name',this.value)"></td>
+      <td>
+        <select onchange="updateProductField('${p.id}','category',this.value)">
+          ${['Formal','Casual','T-Shirt','Pants','Lower','Winter'].map(c=>`<option value="${c}" ${c===p.category?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="number" value="${p.price}" onchange="updateProductField('${p.id}','price',Number(this.value))"></td>
+      <td><input type="number" value="${p.stock}" onchange="updateProductField('${p.id}','stock',Number(this.value))"></td>
+      <td>
+        <button class="icon-action danger" onclick="deleteProduct('${p.id}')">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function escapeAttr(s){ return s.replace(/"/g,'&quot;'); }
+function updateProductField(id, field, value){
+  const p = PRODUCTS.find(pp=>pp.id===id);
+  if(!p) return;
+  p[field] = value;
+  saveProducts();
+  toast('Saved');
+  renderProducts();
+}
+function deleteProduct(id){
+  if(!confirm('Remove this product from the catalog?')) return;
+  PRODUCTS = PRODUCTS.filter(p=>p.id!==id);
+  saveProducts();
+  renderAdminTable();
+  renderProducts();
+  toast('Product removed');
+}
+function adminAddProduct(){
+  const name = document.getElementById('np-name').value.trim();
+  const category = document.getElementById('np-cat').value;
+  const price = Number(document.getElementById('np-price').value);
+  const stock = Number(document.getElementById('np-stock').value);
+  const desc = document.getElementById('np-desc').value.trim() || 'A Susathi original, made to last.';
+  if(!name || !price){
+    alert('Please enter at least a product name and price.');
+    return;
+  }
+  const id = 'p'+Date.now();
+  PRODUCTS.push({id, name, category, price, stock: stock||0, desc});
+  saveProducts();
+  document.getElementById('np-name').value='';
+  document.getElementById('np-price').value='';
+  document.getElementById('np-stock').value='';
+  document.getElementById('np-desc').value='';
+  renderAdminTable();
+  renderProducts();
+  toast('Product added');
+}
+
+/* ================= HEADER SCROLL ================= */
+window.addEventListener('scroll', ()=>{
+  document.getElementById('site-header').classList.toggle('scrolled', window.scrollY>40);
+});
+
+/* ================= INIT ================= */
+window.addEventListener('load', async ()=>{
+  await loadData();
+  initHero();
+});
+</script>
+</body>
+</html>
