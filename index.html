@@ -403,7 +403,7 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
     <div class="admin-error" id="admin-error"></div>
     <input type="password" id="admin-pass" placeholder="Passcode" onkeydown="if(event.key==='Enter')tryAdminLogin()">
     <button class="btn btn-solid" onclick="tryAdminLogin()">Enter Admin Panel</button>
-    <p style="margin-top:18px;font-size:0.72rem;">Default passcode: <b style="color:var(--gold);">susathi-admin</b> &nbsp;(change it in the code before going live)</p>
+    <p style="margin-top:18px;font-size:0.72rem;">The passcode is stored securely on the server, not in this website's code. Set/change it via the <b style="color:var(--gold);">ADMIN_PASSCODE</b> environment variable in Vercel.</p>
     <button class="btn btn-outline" style="width:100%;padding:12px;margin-top:20px;" onclick="hideAdmin()">Back to Store</button>
   </div>
 
@@ -432,7 +432,8 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
         <input id="np-stock" type="number" placeholder="Stock qty">
       </div>
       <input id="np-desc" placeholder="Short description" style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:12px 14px;border-radius:var(--radius);margin-bottom:16px;">
-      <label style="display:block;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Product Photos (minimum 4)</label>
+      <label style="display:block;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Product Photos (minimum 4 — add one at a time or several together)</label>
+      <div id="np-images-preview" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;margin-bottom:12px;"></div>
       <input id="np-images" type="file" accept="image/*" multiple style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:12px 14px;border-radius:var(--radius);margin-bottom:16px;">
       <div id="np-images-status" style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;min-height:16px;"></div>
       <button class="btn btn-solid" style="padding:13px 30px;" id="np-submit-btn" onclick="adminAddProduct()">Add Product</button>
@@ -668,7 +669,7 @@ let qvProduct = null;
 let qvSize = 'M';
 let qvQtyVal = 1;
 let currentPayMethod = 'upi';
-const ADMIN_PASSCODE = 'susathi-admin';
+let ADMIN_PASSCODE = null; // set only after the server confirms it — never hardcoded here
 
 /* ================= RAZORPAY CONFIG =================
    RAZORPAY_KEY_ID is your public Test Key — safe to keep here.
@@ -992,14 +993,37 @@ function removeManagerImage(idx){
   saveProducts();
   renderImageManagerThumbs();
 }
+let npStagedImages = [];
 document.addEventListener('change', function(e){
   if(e.target && e.target.id==='im-file-input' && e.target.files.length){
     handleImageManagerUpload(e.target.files);
   }
   if(e.target && e.target.id==='np-images'){
-    document.getElementById('np-images-status').textContent = e.target.files.length + ' photo(s) selected';
+    npStagedImages = npStagedImages.concat(Array.from(e.target.files));
+    e.target.value = ''; // allow re-selecting the same or new files next time
+    renderNpImagePreviews();
   }
 });
+function renderNpImagePreviews(){
+  const wrap = document.getElementById('np-images-preview');
+  const status = document.getElementById('np-images-status');
+  if(npStagedImages.length===0){
+    wrap.innerHTML = '';
+  }else{
+    wrap.innerHTML = npStagedImages.map((file,idx)=>`
+      <div style="position:relative;aspect-ratio:1/1;border-radius:var(--radius);overflow:hidden;border:1px solid var(--hairline);">
+        <img src="${URL.createObjectURL(file)}" style="width:100%;height:100%;object-fit:cover;">
+        <button onclick="removeNpImage(${idx})" style="position:absolute;top:4px;right:4px;background:rgba(10,10,12,0.8);color:var(--ivory);border-radius:50%;width:20px;height:20px;font-size:0.85rem;line-height:1;">&times;</button>
+      </div>
+    `).join('');
+  }
+  status.style.color = 'var(--muted)';
+  status.textContent = npStagedImages.length + ' photo(s) selected' + (npStagedImages.length < 4 ? ` — add ${4-npStagedImages.length} more` : '');
+}
+function removeNpImage(idx){
+  npStagedImages.splice(idx,1);
+  renderNpImagePreviews();
+}
 async function handleImageManagerUpload(files){
   const status = document.getElementById('im-status');
   const p = PRODUCTS.find(pp=>pp.id===imgManagerProductId);
@@ -1343,17 +1367,18 @@ function finalizeOrder(){
     pincode: lastCheckoutDetails.pincode,
     items: CART.map(c=>{
       const p = PRODUCTS.find(pp=>pp.id===c.id);
-      return { name: p ? p.name : c.id, size: c.size, qty: c.qty, price: p ? p.price : 0 };
+      return { id: c.id, name: p ? p.name : c.id, size: c.size, qty: c.qty, price: p ? p.price : 0 };
     }),
     total: subtotal,
   };
 
-  // Shared "success" path for both COD and verified online payments.
+  // Update local stock immediately for a responsive UI. The server also
+  // decrements stock authoritatively inside /api/orders, so this stays
+  // correct even without an admin session active.
   CART.forEach(c=>{
     const p = PRODUCTS.find(pp=>pp.id===c.id);
     if(p) p.stock = Math.max(0, p.stock - c.qty);
   });
-  saveProducts();
 
   fetch('/api/orders', {
     method:'POST',
@@ -1465,19 +1490,34 @@ function showAdmin(){
   window.scrollTo(0,0);
 }
 function hideAdmin(){
+  ADMIN_PASSCODE = null; // end the admin session
   document.getElementById('admin-view').style.display='none';
   document.getElementById('store-view').style.display='block';
   renderProducts();
 }
-function tryAdminLogin(){
+async function tryAdminLogin(){
   const val = document.getElementById('admin-pass').value;
-  if(val === ADMIN_PASSCODE){
-    document.getElementById('admin-gate').style.display='none';
-    document.getElementById('admin-dash').style.display='block';
-    renderAdminTable();
-    renderAdminOrders();
-  }else{
-    document.getElementById('admin-error').textContent = 'Incorrect passcode. Try again.';
+  const errEl = document.getElementById('admin-error');
+  errEl.textContent = 'Checking...';
+  try{
+    const res = await fetch('/api/admin-login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ passcode: val })
+    });
+    const data = await res.json();
+    if(data.success){
+      ADMIN_PASSCODE = val;
+      errEl.textContent = '';
+      document.getElementById('admin-gate').style.display='none';
+      document.getElementById('admin-dash').style.display='block';
+      renderAdminTable();
+      renderAdminOrders();
+    }else{
+      errEl.textContent = 'Incorrect passcode. Try again.';
+    }
+  }catch(err){
+    errEl.textContent = 'Could not reach the server. Please try again.';
   }
 }
 async function renderAdminOrders(){
@@ -1557,15 +1597,14 @@ async function adminAddProduct(){
   const price = Number(document.getElementById('np-price').value);
   const stock = Number(document.getElementById('np-stock').value);
   const desc = document.getElementById('np-desc').value.trim() || 'A Susathi original, made to last.';
-  const fileInput = document.getElementById('np-images');
   const status = document.getElementById('np-images-status');
 
   if(!name || !price){
     alert('Please enter at least a product name and price.');
     return;
   }
-  if(!fileInput.files || fileInput.files.length < 4){
-    status.textContent = 'Please select at least 4 photos for this product.';
+  if(npStagedImages.length < 4){
+    status.textContent = `Please add at least 4 photos (you have ${npStagedImages.length}).`;
     status.style.color = 'var(--danger)';
     return;
   }
@@ -1574,7 +1613,7 @@ async function adminAddProduct(){
   submitBtn.disabled = true;
   status.style.color = 'var(--muted)';
   try{
-    const images = await uploadImageFiles(fileInput.files, (i,total)=>{
+    const images = await uploadImageFiles(npStagedImages, (i,total)=>{
       status.textContent = `Uploading photo ${i} of ${total}...`;
     });
     const id = 'p'+Date.now();
@@ -1584,7 +1623,8 @@ async function adminAddProduct(){
     document.getElementById('np-price').value='';
     document.getElementById('np-stock').value='';
     document.getElementById('np-desc').value='';
-    fileInput.value='';
+    npStagedImages = [];
+    renderNpImagePreviews();
     status.textContent='';
     renderAdminTable();
     renderProducts();
