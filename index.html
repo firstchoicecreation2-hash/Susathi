@@ -224,7 +224,7 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
     <a href="#" onclick="openModal('terms-overlay'); return false;">Terms</a>
   </nav>
   <div class="nav-actions">
-    <button class="admin-toggle" onclick="showAdmin()">Admin</button>
+    <button class="admin-toggle" onclick="openAdminInNewTab()">Admin</button>
     <button class="icon-btn" onclick="openCart()">🛍
       <span class="cart-count" id="cart-count" style="display:none;">0</span>
     </button>
@@ -1065,7 +1065,7 @@ function renderProducts(){
   }
   grid.innerHTML = list.map(p=>`
     <div class="card">
-      <div class="card-media">
+      <div class="card-media" onclick="openProductInNewTab('${p.id}')" style="cursor:pointer;">
         ${p.images && p.images.length
           ? `<img src="${p.images[0]}" style="width:100%;height:100%;object-fit:cover;">`
           : `<canvas id="canvas-${p.id}" width="300" height="300"></canvas>`}
@@ -1073,11 +1073,11 @@ function renderProducts(){
       </div>
       <div class="card-body">
         <div class="card-cat">${p.category}</div>
-        <div class="card-name">${escapeHtml(p.name)}</div>
+        <div class="card-name" onclick="openProductInNewTab('${p.id}')" style="cursor:pointer;">${escapeHtml(p.name)}</div>
         <div class="card-price">₹${p.price.toLocaleString('en-IN')}</div>
         <div class="card-stock">${p.stock>0? p.stock+' in stock' : 'Out of stock'}</div>
         <div class="card-actions">
-          <button class="btn btn-outline" onclick="openQuickView('${p.id}')">Quick View</button>
+          <button class="btn btn-outline" onclick="openProductInNewTab('${p.id}')">Quick View</button>
           <button class="btn btn-solid" ${p.stock<=0?'disabled':''} onclick="quickAdd('${p.id}')">Add to Cart</button>
         </div>
       </div>
@@ -1641,10 +1641,29 @@ window.addEventListener('scroll', ()=>{
   document.getElementById('site-header').classList.toggle('scrolled', window.scrollY>40);
 });
 
+/* ================= NEW TAB HELPERS ================= */
+function openAdminInNewTab(){
+  window.open(window.location.pathname + '?admin=1', '_blank');
+}
+function openProductInNewTab(id){
+  window.open(window.location.pathname + '?product=' + encodeURIComponent(id), '_blank');
+}
+function checkUrlForAutoOpen(){
+  const params = new URLSearchParams(window.location.search);
+  const adminParam = params.get('admin');
+  const productParam = params.get('product');
+  if(adminParam){
+    showAdmin();
+  }else if(productParam && PRODUCTS.find(p=>p.id===productParam)){
+    openQuickView(productParam);
+  }
+}
+
 /* ================= INIT ================= */
 window.addEventListener('load', async ()=>{
   await loadData();
   initHero();
+  checkUrlForAutoOpen();
 });
 </script>
 </body>
