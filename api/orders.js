@@ -64,6 +64,20 @@ module.exports = async (req, res) => {
       if (!order || !order.id || !Array.isArray(order.items)) {
         return res.status(400).json({ error: 'Invalid order data.' });
       }
+
+      // Decrement stock authoritatively here on the server — this doesn't
+      // depend on any admin session, so it works for every customer order.
+      try {
+        const products = (await kv.get('susathi-products')) || [];
+        order.items.forEach(item => {
+          const p = products.find(pp => pp.id === item.id);
+          if (p) p.stock = Math.max(0, p.stock - item.qty);
+        });
+        await kv.set('susathi-products', products);
+      } catch (stockErr) {
+        console.error('Could not update stock:', stockErr);
+      }
+
       const orders = (await kv.get('susathi-orders')) || [];
       orders.unshift(order); // newest first
       await kv.set('susathi-orders', orders);
