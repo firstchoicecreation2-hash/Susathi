@@ -313,6 +313,27 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
           </div>
         </div>
         <button class="btn btn-solid" id="qv-add-btn" onclick="addQvToCart()">Add to Cart</button>
+
+        <div style="margin-top:30px;padding-top:24px;border-top:1px solid var(--hairline);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <h4 style="font-size:1rem;color:var(--gold);">Reviews</h4>
+            <div id="qv-rating-summary" style="font-size:0.85rem;color:var(--muted);"></div>
+          </div>
+          <div id="qv-reviews-list" style="max-height:200px;overflow-y:auto;margin-bottom:16px;"></div>
+          <div style="border-top:1px solid var(--hairline);padding-top:16px;">
+            <div style="display:flex;gap:8px;margin-bottom:10px;" id="qv-star-input">
+              <span onclick="setQvReviewRating(1)" data-star="1" style="cursor:pointer;font-size:1.2rem;">★</span>
+              <span onclick="setQvReviewRating(2)" data-star="2" style="cursor:pointer;font-size:1.2rem;">★</span>
+              <span onclick="setQvReviewRating(3)" data-star="3" style="cursor:pointer;font-size:1.2rem;">★</span>
+              <span onclick="setQvReviewRating(4)" data-star="4" style="cursor:pointer;font-size:1.2rem;">★</span>
+              <span onclick="setQvReviewRating(5)" data-star="5" style="cursor:pointer;font-size:1.2rem;">★</span>
+            </div>
+            <input id="qv-review-name" placeholder="Your name" style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:10px 12px;border-radius:var(--radius);margin-bottom:8px;font-size:0.85rem;">
+            <textarea id="qv-review-comment" rows="2" placeholder="Share your experience (optional)" style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:10px 12px;border-radius:var(--radius);margin-bottom:8px;font-size:0.85rem;"></textarea>
+            <div id="qv-review-status" style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;min-height:14px;"></div>
+            <button class="btn btn-outline" style="padding:11px;" onclick="submitQvReview()">Submit Review</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -427,6 +448,12 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
           <tbody id="admin-table-body"></tbody>
         </table>
       </div>
+    </div>
+
+    <div class="admin-panel">
+      <h4>Orders</h4>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">Every COD and online order appears here, newest first.</p>
+      <div id="admin-orders-list"></div>
     </div>
   </div>
 </div>
@@ -1042,6 +1069,71 @@ function escapeHtml(s){
   return s.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+/* ================= REVIEWS ================= */
+let qvReviewRating = 0;
+function setQvReviewRating(n){
+  qvReviewRating = n;
+  document.querySelectorAll('#qv-star-input span').forEach(el=>{
+    const star = Number(el.dataset.star);
+    el.style.color = star <= n ? 'var(--gold)' : 'var(--hairline)';
+  });
+}
+async function loadQvReviews(productId){
+  const listEl = document.getElementById('qv-reviews-list');
+  const summaryEl = document.getElementById('qv-rating-summary');
+  listEl.innerHTML = `<p style="color:var(--muted);font-size:0.82rem;">Loading reviews...</p>`;
+  try{
+    const res = await fetch('/api/reviews?productId=' + encodeURIComponent(productId));
+    const reviews = await res.json();
+    if(!Array.isArray(reviews) || reviews.length===0){
+      listEl.innerHTML = `<p style="color:var(--muted);font-size:0.82rem;">No reviews yet — be the first to share your experience.</p>`;
+      summaryEl.textContent = '';
+      return;
+    }
+    const avg = reviews.reduce((a,r)=>a+r.rating,0) / reviews.length;
+    summaryEl.textContent = `★ ${avg.toFixed(1)} (${reviews.length} review${reviews.length>1?'s':''})`;
+    listEl.innerHTML = reviews.map(r=>`
+      <div style="padding:10px 0;border-bottom:1px solid var(--hairline);">
+        <div style="display:flex;justify-content:space-between;font-size:0.85rem;">
+          <b>${escapeHtml(r.name)}</b>
+          <span style="color:var(--gold);">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+        </div>
+        ${r.comment ? `<div style="color:var(--muted);font-size:0.82rem;margin-top:4px;">${escapeHtml(r.comment)}</div>` : ''}
+      </div>
+    `).join('');
+  }catch(err){
+    listEl.innerHTML = `<p style="color:var(--danger);font-size:0.82rem;">Could not load reviews.</p>`;
+  }
+}
+async function submitQvReview(){
+  const status = document.getElementById('qv-review-status');
+  const name = document.getElementById('qv-review-name').value.trim();
+  const comment = document.getElementById('qv-review-comment').value.trim();
+  if(!name || qvReviewRating===0){
+    status.textContent = 'Please add your name and a star rating.';
+    status.style.color = 'var(--danger)';
+    return;
+  }
+  status.textContent = 'Submitting...';
+  status.style.color = 'var(--muted)';
+  try{
+    const res = await fetch('/api/reviews', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ productId: qvProduct.id, name, rating: qvReviewRating, comment })
+    });
+    if(!res.ok) throw new Error('Failed');
+    document.getElementById('qv-review-name').value = '';
+    document.getElementById('qv-review-comment').value = '';
+    setQvReviewRating(0);
+    status.textContent = 'Thank you for your review!';
+    loadQvReviews(qvProduct.id);
+  }catch(err){
+    status.textContent = 'Could not submit review. Please try again.';
+    status.style.color = 'var(--danger)';
+  }
+}
+
 /* ================= QUICK VIEW MODAL ================= */
 function openQuickView(id){
   qvProduct = PRODUCTS.find(p=>p.id===id);
@@ -1059,6 +1151,12 @@ function openQuickView(id){
   else{ addBtn.disabled=false; addBtn.textContent='Add to Cart'; }
   document.getElementById('qv-overlay').classList.add('show');
   if(!qvRenderer) initQvScene();
+
+  setQvReviewRating(0);
+  document.getElementById('qv-review-name').value = '';
+  document.getElementById('qv-review-comment').value = '';
+  document.getElementById('qv-review-status').textContent = '';
+  loadQvReviews(qvProduct.id);
 
   const hasImages = qvProduct.images && qvProduct.images.length > 0;
   document.getElementById('qv-tabs').style.display = hasImages ? 'flex' : 'none';
@@ -1228,14 +1326,41 @@ function validateCheckoutForm(){
   return {name, phone, email: document.getElementById('co-email').value.trim(), address, city, pincode};
 }
 
+let lastCheckoutDetails = null;
+
 function finalizeOrder(){
+  const subtotal = cartTotal();
+  const orderId = 'SUS-'+Math.floor(100000+Math.random()*900000);
+  const orderRecord = {
+    id: orderId,
+    date: new Date().toISOString(),
+    paymentMethod: currentPayMethod,
+    name: lastCheckoutDetails.name,
+    phone: lastCheckoutDetails.phone,
+    email: lastCheckoutDetails.email,
+    address: lastCheckoutDetails.address,
+    city: lastCheckoutDetails.city,
+    pincode: lastCheckoutDetails.pincode,
+    items: CART.map(c=>{
+      const p = PRODUCTS.find(pp=>pp.id===c.id);
+      return { name: p ? p.name : c.id, size: c.size, qty: c.qty, price: p ? p.price : 0 };
+    }),
+    total: subtotal,
+  };
+
   // Shared "success" path for both COD and verified online payments.
   CART.forEach(c=>{
     const p = PRODUCTS.find(pp=>pp.id===c.id);
     if(p) p.stock = Math.max(0, p.stock - c.qty);
   });
   saveProducts();
-  const orderId = 'SUS-'+Math.floor(100000+Math.random()*900000);
+
+  fetch('/api/orders', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(orderRecord)
+  }).catch(err => console.error('Could not save order record:', err));
+
   document.getElementById('confirm-order-id').textContent = orderId;
   CART = [];
   saveCart();
@@ -1252,6 +1377,7 @@ function backendConfigured(){
 async function placeOrder(){
   const details = validateCheckoutForm();
   if(!details) return;
+  lastCheckoutDetails = details;
   const err = document.getElementById('co-error');
 
   // Cash on Delivery never needs Razorpay.
@@ -1349,8 +1475,40 @@ function tryAdminLogin(){
     document.getElementById('admin-gate').style.display='none';
     document.getElementById('admin-dash').style.display='block';
     renderAdminTable();
+    renderAdminOrders();
   }else{
     document.getElementById('admin-error').textContent = 'Incorrect passcode. Try again.';
+  }
+}
+async function renderAdminOrders(){
+  const wrap = document.getElementById('admin-orders-list');
+  wrap.innerHTML = `<p style="color:var(--muted);font-size:0.85rem;">Loading orders...</p>`;
+  try{
+    const res = await fetch('/api/orders', {
+      headers: {'x-admin-passcode': ADMIN_PASSCODE}
+    });
+    const orders = await res.json();
+    if(!Array.isArray(orders) || orders.length===0){
+      wrap.innerHTML = `<p style="color:var(--muted);font-size:0.85rem;">No orders yet.</p>`;
+      return;
+    }
+    wrap.innerHTML = orders.map(o=>{
+      const itemsList = o.items.map(i=>`${i.qty} x ${escapeHtml(i.name)} (Size ${i.size}) — ₹${(i.price*i.qty).toLocaleString('en-IN')}`).join('<br>');
+      const dateStr = new Date(o.date).toLocaleString('en-IN');
+      return `
+      <div style="border:1px solid var(--hairline);border-radius:var(--radius);padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <div><b style="color:var(--gold-bright);font-family:'Cormorant Garamond',serif;font-size:1.1rem;">${o.id}</b> <span style="color:var(--muted);font-size:0.78rem;">— ${dateStr}</span></div>
+          <div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);border:1px solid var(--hairline);padding:4px 10px;border-radius:999px;">${o.paymentMethod}</div>
+        </div>
+        <div style="font-size:0.85rem;color:var(--ivory);margin-bottom:6px;"><b>${escapeHtml(o.name)}</b> · ${escapeHtml(o.phone)} ${o.email? '· '+escapeHtml(o.email):''}</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">${escapeHtml(o.address)}, ${escapeHtml(o.city)} - ${escapeHtml(o.pincode)}</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">${itemsList}</div>
+        <div style="font-size:0.95rem;color:var(--gold-bright);font-family:'Cormorant Garamond',serif;font-weight:600;">Total: ₹${o.total.toLocaleString('en-IN')}</div>
+      </div>`;
+    }).join('');
+  }catch(err){
+    wrap.innerHTML = `<p style="color:var(--danger);font-size:0.85rem;">Could not load orders.</p>`;
   }
 }
 function renderAdminTable(){
