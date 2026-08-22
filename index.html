@@ -283,7 +283,17 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
     <button class="modal-close" onclick="closeModal('qv-overlay')">&times;</button>
     <div class="qv-body">
       <div class="qv-stage" id="qv-stage">
-        <div class="qv-hint">Drag to rotate — 3D view</div>
+        <div id="qv-tabs" style="position:absolute;top:14px;left:14px;z-index:5;display:none;gap:8px;">
+          <button id="qv-tab-photos" onclick="setQvTab('photos')" style="font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;padding:6px 12px;border:1px solid var(--hairline);border-radius:999px;background:rgba(10,10,12,0.7);color:var(--ivory);">Photos</button>
+          <button id="qv-tab-3d" onclick="setQvTab('3d')" style="font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;padding:6px 12px;border:1px solid var(--hairline);border-radius:999px;background:rgba(10,10,12,0.7);color:var(--ivory);">3D View</button>
+        </div>
+        <div id="qv-gallery" style="display:none;position:absolute;inset:0;flex-direction:column;">
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            <img id="qv-main-image" style="max-width:100%;max-height:100%;object-fit:contain;">
+          </div>
+          <div id="qv-thumb-row" style="display:flex;gap:8px;padding:12px;overflow-x:auto;"></div>
+        </div>
+        <div class="qv-hint" id="qv-hint-3d">Drag to rotate — 3D view</div>
       </div>
       <div class="qv-info">
         <div class="card-cat" id="qv-cat">Category</div>
@@ -401,7 +411,10 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
         <input id="np-stock" type="number" placeholder="Stock qty">
       </div>
       <input id="np-desc" placeholder="Short description" style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:12px 14px;border-radius:var(--radius);margin-bottom:16px;">
-      <button class="btn btn-solid" style="padding:13px 30px;" onclick="adminAddProduct()">Add Product</button>
+      <label style="display:block;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Product Photos (minimum 4)</label>
+      <input id="np-images" type="file" accept="image/*" multiple style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:12px 14px;border-radius:var(--radius);margin-bottom:16px;">
+      <div id="np-images-status" style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;min-height:16px;"></div>
+      <button class="btn btn-solid" style="padding:13px 30px;" id="np-submit-btn" onclick="adminAddProduct()">Add Product</button>
     </div>
 
     <div class="admin-panel">
@@ -581,6 +594,21 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
         <h4 style="color:var(--ivory); font-size:1.05rem; margin:22px 0 8px;">6. Contact</h4>
         <p>For payment questions, reach us at yogeshsharma072004@gmail.com or call +91 78369 50764 / +91 78276 00508.</p>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ IMAGE MANAGER MODAL (admin) ============ -->
+<div class="overlay" id="image-manager-overlay">
+  <div class="modal" style="max-width:640px;">
+    <button class="modal-close" onclick="closeModal('image-manager-overlay')">&times;</button>
+    <div class="checkout-body">
+      <h3 id="im-product-name">Manage Photos</h3>
+      <p class="checkout-sub">Add at least 4 photos so customers get a good look at this product.</p>
+      <div id="im-thumbs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-bottom:20px;"></div>
+      <input id="im-file-input" type="file" accept="image/*" multiple style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:12px 14px;border-radius:var(--radius);margin-bottom:14px;">
+      <div id="im-status" style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;min-height:16px;"></div>
+      <button class="btn btn-solid" style="padding:14px 30px;" onclick="closeModal('image-manager-overlay'); renderAdminTable(); renderProducts();">Done</button>
     </div>
   </div>
 </div>
@@ -855,6 +883,116 @@ function updateQvTexture(category){
   qvMesh.material = [sideMat,sideMat,sideMat,sideMat, frontMat, frontMat];
 }
 
+/* ================= IMAGE UPLOAD HELPERS ================= */
+function resizeImageForUpload(file, maxDim, quality){
+  maxDim = maxDim || 1200;
+  quality = quality || 0.82;
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > h && w > maxDim){ h = Math.round(h*maxDim/w); w = maxDim; }
+        else if(h >= w && h > maxDim){ w = Math.round(w*maxDim/h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = ()=>reject(new Error('Could not read image.'));
+      img.src = e.target.result;
+    };
+    reader.onerror = ()=>reject(new Error('Could not read file.'));
+    reader.readAsDataURL(file);
+  });
+}
+async function uploadOneImage(file){
+  const dataUrl = await resizeImageForUpload(file);
+  const res = await fetch('/api/upload-image', {
+    method:'POST',
+    headers:{'Content-Type':'application/json', 'x-admin-passcode': ADMIN_PASSCODE},
+    body: JSON.stringify({imageData: dataUrl, filename: file.name})
+  });
+  const data = await res.json();
+  if(!res.ok || !data.url) throw new Error(data.error || 'Upload failed');
+  return data.url;
+}
+async function uploadImageFiles(fileList, onProgress){
+  const files = Array.from(fileList);
+  const urls = [];
+  for(let i=0;i<files.length;i++){
+    if(onProgress) onProgress(i+1, files.length);
+    const url = await uploadOneImage(files[i]);
+    urls.push(url);
+  }
+  return urls;
+}
+
+/* ================= IMAGE MANAGER (admin edits an existing product's photos) ================= */
+let imgManagerProductId = null;
+function openImageManager(id){
+  imgManagerProductId = id;
+  const p = PRODUCTS.find(pp=>pp.id===id);
+  if(!p) return;
+  document.getElementById('im-product-name').textContent = 'Photos — ' + p.name;
+  document.getElementById('im-status').textContent = '';
+  document.getElementById('im-file-input').value = '';
+  renderImageManagerThumbs();
+  document.getElementById('image-manager-overlay').classList.add('show');
+}
+function renderImageManagerThumbs(){
+  const p = PRODUCTS.find(pp=>pp.id===imgManagerProductId);
+  const wrap = document.getElementById('im-thumbs');
+  if(!p){ wrap.innerHTML=''; return; }
+  const images = p.images || [];
+  if(images.length===0){
+    wrap.innerHTML = `<div style="grid-column:1/-1;color:var(--muted);font-size:0.85rem;">No photos yet. Upload at least 4 below.</div>`;
+    return;
+  }
+  wrap.innerHTML = images.map((url,idx)=>`
+    <div style="position:relative;aspect-ratio:1/1;border-radius:var(--radius);overflow:hidden;border:1px solid var(--hairline);">
+      <img src="${url}" style="width:100%;height:100%;object-fit:cover;">
+      <button onclick="removeManagerImage(${idx})" style="position:absolute;top:4px;right:4px;background:rgba(10,10,12,0.8);color:var(--ivory);border-radius:50%;width:22px;height:22px;font-size:0.9rem;line-height:1;">&times;</button>
+    </div>
+  `).join('');
+}
+function removeManagerImage(idx){
+  const p = PRODUCTS.find(pp=>pp.id===imgManagerProductId);
+  if(!p || !p.images) return;
+  p.images.splice(idx,1);
+  saveProducts();
+  renderImageManagerThumbs();
+}
+document.addEventListener('change', function(e){
+  if(e.target && e.target.id==='im-file-input' && e.target.files.length){
+    handleImageManagerUpload(e.target.files);
+  }
+  if(e.target && e.target.id==='np-images'){
+    document.getElementById('np-images-status').textContent = e.target.files.length + ' photo(s) selected';
+  }
+});
+async function handleImageManagerUpload(files){
+  const status = document.getElementById('im-status');
+  const p = PRODUCTS.find(pp=>pp.id===imgManagerProductId);
+  if(!p) return;
+  try{
+    const urls = await uploadImageFiles(files, (i,total)=>{
+      status.textContent = `Uploading photo ${i} of ${total}...`;
+    });
+    p.images = (p.images || []).concat(urls);
+    await saveProducts();
+    status.textContent = p.images.length < 4
+      ? `Saved. Add ${4 - p.images.length} more photo(s) — aim for at least 4.`
+      : 'All photos saved.';
+    renderImageManagerThumbs();
+  }catch(err){
+    status.textContent = 'Upload failed: ' + err.message;
+  }
+  document.getElementById('im-file-input').value = '';
+}
+
 /* ================= RENDER: CATEGORY STRIP ================= */
 function renderCategoryStrip(){
   const strip = document.getElementById('cat-strip');
@@ -877,8 +1015,10 @@ function renderProducts(){
   grid.innerHTML = list.map(p=>`
     <div class="card">
       <div class="card-media">
-        <canvas id="canvas-${p.id}" width="300" height="300"></canvas>
-        <div class="view3d-badge">3D View</div>
+        ${p.images && p.images.length
+          ? `<img src="${p.images[0]}" style="width:100%;height:100%;object-fit:cover;">`
+          : `<canvas id="canvas-${p.id}" width="300" height="300"></canvas>`}
+        <div class="view3d-badge">${p.images && p.images.length ? p.images.length+' Photos' : '3D View'}</div>
       </div>
       <div class="card-body">
         <div class="card-cat">${p.category}</div>
@@ -893,6 +1033,7 @@ function renderProducts(){
     </div>
   `).join('');
   list.forEach(p=>{
+    if(p.images && p.images.length) return;
     const c = document.getElementById('canvas-'+p.id);
     if(c) drawIcon(c.getContext('2d'), c.width, c.height, p.category);
   });
@@ -918,7 +1059,43 @@ function openQuickView(id){
   else{ addBtn.disabled=false; addBtn.textContent='Add to Cart'; }
   document.getElementById('qv-overlay').classList.add('show');
   if(!qvRenderer) initQvScene();
+
+  const hasImages = qvProduct.images && qvProduct.images.length > 0;
+  document.getElementById('qv-tabs').style.display = hasImages ? 'flex' : 'none';
+  if(hasImages){
+    renderQvGallery();
+    setQvTab('photos');
+  }else{
+    setQvTab('3d');
+  }
   setTimeout(()=>{ resizeQvRenderer(); updateQvTexture(qvProduct.category); }, 30);
+}
+function renderQvGallery(){
+  const images = qvProduct.images || [];
+  if(images.length===0) return;
+  document.getElementById('qv-main-image').src = images[0];
+  document.getElementById('qv-thumb-row').innerHTML = images.map((url,idx)=>`
+    <img src="${url}" onclick="document.getElementById('qv-main-image').src='${url}'" style="width:56px;height:56px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--hairline);cursor:pointer;flex-shrink:0;">
+  `).join('');
+}
+function setQvTab(tab){
+  const gallery = document.getElementById('qv-gallery');
+  const hint = document.getElementById('qv-hint-3d');
+  const photosBtn = document.getElementById('qv-tab-photos');
+  const threeDBtn = document.getElementById('qv-tab-3d');
+  if(tab==='photos'){
+    gallery.style.display = 'flex';
+    hint.style.display = 'none';
+    if(qvRenderer) qvRenderer.domElement.style.display = 'none';
+    photosBtn.style.borderColor = 'var(--gold)'; photosBtn.style.color = 'var(--gold)';
+    threeDBtn.style.borderColor = 'var(--hairline)'; threeDBtn.style.color = 'var(--ivory)';
+  }else{
+    gallery.style.display = 'none';
+    hint.style.display = 'block';
+    if(qvRenderer) qvRenderer.domElement.style.display = 'block';
+    threeDBtn.style.borderColor = 'var(--gold)'; threeDBtn.style.color = 'var(--gold)';
+    photosBtn.style.borderColor = 'var(--hairline)'; photosBtn.style.color = 'var(--ivory)';
+  }
 }
 function setQvSize(s){
   qvSize = s;
@@ -1193,6 +1370,7 @@ function renderAdminTable(){
       <td><input type="number" value="${p.price}" onchange="updateProductField('${p.id}','price',Number(this.value))"></td>
       <td><input type="number" value="${p.stock}" onchange="updateProductField('${p.id}','stock',Number(this.value))"></td>
       <td>
+        <button class="icon-action" onclick="openImageManager('${p.id}')">Photos${p.images && p.images.length ? ' ('+p.images.length+')' : ''}</button>
         <button class="icon-action danger" onclick="deleteProduct('${p.id}')">Delete</button>
       </td>
     </tr>
@@ -1215,26 +1393,49 @@ function deleteProduct(id){
   renderProducts();
   toast('Product removed');
 }
-function adminAddProduct(){
+async function adminAddProduct(){
   const name = document.getElementById('np-name').value.trim();
   const category = document.getElementById('np-cat').value;
   const price = Number(document.getElementById('np-price').value);
   const stock = Number(document.getElementById('np-stock').value);
   const desc = document.getElementById('np-desc').value.trim() || 'A Susathi original, made to last.';
+  const fileInput = document.getElementById('np-images');
+  const status = document.getElementById('np-images-status');
+
   if(!name || !price){
     alert('Please enter at least a product name and price.');
     return;
   }
-  const id = 'p'+Date.now();
-  PRODUCTS.push({id, name, category, price, stock: stock||0, desc});
-  saveProducts();
-  document.getElementById('np-name').value='';
-  document.getElementById('np-price').value='';
-  document.getElementById('np-stock').value='';
-  document.getElementById('np-desc').value='';
-  renderAdminTable();
-  renderProducts();
-  toast('Product added');
+  if(!fileInput.files || fileInput.files.length < 4){
+    status.textContent = 'Please select at least 4 photos for this product.';
+    status.style.color = 'var(--danger)';
+    return;
+  }
+
+  const submitBtn = document.getElementById('np-submit-btn');
+  submitBtn.disabled = true;
+  status.style.color = 'var(--muted)';
+  try{
+    const images = await uploadImageFiles(fileInput.files, (i,total)=>{
+      status.textContent = `Uploading photo ${i} of ${total}...`;
+    });
+    const id = 'p'+Date.now();
+    PRODUCTS.push({id, name, category, price, stock: stock||0, desc, images});
+    await saveProducts();
+    document.getElementById('np-name').value='';
+    document.getElementById('np-price').value='';
+    document.getElementById('np-stock').value='';
+    document.getElementById('np-desc').value='';
+    fileInput.value='';
+    status.textContent='';
+    renderAdminTable();
+    renderProducts();
+    toast('Product added');
+  }catch(err){
+    status.textContent = 'Could not upload photos: ' + err.message;
+    status.style.color = 'var(--danger)';
+  }
+  submitBtn.disabled = false;
 }
 
 /* ================= HEADER SCROLL ================= */
