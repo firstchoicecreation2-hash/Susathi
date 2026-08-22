@@ -35,6 +35,6 @@ module.exports = async (req, res) => {
     res.status(200).json({ url: blob.url });
   } catch (err) {
     console.error('Image upload failed:', err);
-    res.status(500).json({ error: 'Could not upload image. Is Vercel Blob storage connected?' });
+    res.status(500).json({ error: 'Upload error: ' + (err && err.message ? err.message : String(err)) });
   }
 };
