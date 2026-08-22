@@ -51,16 +51,23 @@ nav.links a:hover{opacity:1;color:var(--gold-bright);}
 .admin-toggle:hover{border-color:var(--gold);color:var(--gold);}
 
 /* ---------- HERO ---------- */
-.hero{position:relative;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid var(--hairline);}
-#hero-canvas{position:absolute;inset:0;width:100%;height:100%;}
-.hero-content{position:relative;z-index:2;text-align:center;max-width:720px;padding:0 24px;pointer-events:none;}
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid var(--hairline);padding:120px 5vw 60px;}
+.hero-inner{display:flex;align-items:center;justify-content:center;gap:70px;max-width:1200px;width:100%;flex-wrap:wrap;}
+.hero-content{max-width:460px;flex:1 1 400px;}
+.hero-stage{perspective:1400px;width:320px;height:400px;position:relative;flex-shrink:0;}
+.hero-card{position:absolute;inset:0;border-radius:4px;background:radial-gradient(circle at 50% 35%, #201c14 0%, #0d0c0b 75%);border:1px solid var(--hairline);display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden;transition:transform 0.9s cubic-bezier(.6,.05,.2,1), opacity 0.6s ease;overflow:hidden;}
+.hero-card canvas{width:65%;height:65%;}
+.hero-card-label{margin-top:18px;font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold-bright);}
+.hero-dots{position:absolute;bottom:-34px;left:50%;transform:translateX(-50%);display:flex;gap:8px;}
+.hero-dot{width:6px;height:6px;border-radius:50%;background:var(--hairline);transition:all 0.3s;}
+.hero-dot.active{background:var(--gold);width:20px;border-radius:3px;}
 .hero-content .eyebrow{display:block;margin-bottom:22px;}
-.hero-content h1{font-size:clamp(2.6rem,6vw,4.6rem);line-height:1.05;margin-bottom:22px;}
+.hero-content h1{font-size:clamp(2.2rem,4.5vw,3.4rem);line-height:1.08;margin-bottom:22px;}
 .hero-content h1 em{font-style:italic;color:var(--gold);}
-.hero-content p{color:var(--muted);font-size:1.05rem;max-width:480px;margin:0 auto 34px;line-height:1.6;}
-.hero-cta{pointer-events:all;display:inline-block;padding:15px 38px;border:1px solid var(--gold);color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;font-size:0.8rem;transition:all 0.25s;}
+.hero-content p{color:var(--muted);font-size:1.02rem;margin:0 0 30px;line-height:1.6;}
+.hero-cta{display:inline-block;padding:15px 38px;border:1px solid var(--gold);color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;font-size:0.8rem;transition:all 0.25s;}
 .hero-cta:hover{background:var(--gold);color:#0a0a0c;}
-.scroll-cue{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);font-size:0.7rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--muted);z-index:2;}
+.scroll-cue{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:0.7rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--muted);z-index:2;}
 
 /* ---------- SECTIONS ---------- */
 section{padding:110px 5vw;}
@@ -210,6 +217,8 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
 @media(max-width:640px){
   nav.links{display:none;}
   section{padding:70px 6vw;}
+  .hero-inner{flex-direction:column-reverse;text-align:center;}
+  .hero-content p{margin-left:auto;margin-right:auto;}
 }
 </style>
 </head>
@@ -235,12 +244,17 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
 <div id="store-view">
 
   <section class="hero">
-    <canvas id="hero-canvas"></canvas>
-    <div class="hero-content">
-      <span class="eyebrow">Susathi House</span>
-      <h1>Royalty in <em>Every</em><br>Thread</h1>
-      <p>Tailored casual and formal wear, cut for those who dress with intent. Shirts, lowers, and a winter collection built to last.</p>
-      <a href="#collection" class="hero-cta">Explore the Collection</a>
+    <div class="hero-inner">
+      <div class="hero-content">
+        <span class="eyebrow">Susathi House</span>
+        <h1>Royalty in <em>Every</em><br>Thread</h1>
+        <p>Tailored casual and formal wear, cut for those who dress with intent. Shirts, lowers, and a winter collection built to last.</p>
+        <a href="#collection" class="hero-cta">Explore the Collection</a>
+      </div>
+      <div class="hero-stage">
+        <div id="hero-card-stack"></div>
+        <div id="hero-dots" class="hero-dots"></div>
+      </div>
     </div>
     <div class="scroll-cue">Scroll</div>
   </section>
@@ -771,75 +785,72 @@ function drawIcon(ctx, w, h, category){
   ctx.restore();
 }
 
-/* ================= HERO 3D SCENE (rotating monogram) ================= */
-let heroScene, heroCamera, heroRenderer, heroMesh, heroFrame;
-function initHero(){
-  const canvas = document.getElementById('hero-canvas');
-  heroScene = new THREE.Scene();
-  heroCamera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
-  heroCamera.position.set(0,0,8);
-  heroRenderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
-  heroRenderer.setSize(window.innerWidth, window.innerHeight);
-  heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+/* ================= HERO CATEGORY SHOWCASE ================= */
+const HERO_CATEGORY_ORDER = ['Formal','Casual','T-Shirt','Pants','Lower','Winter'];
+let heroTimer = null;
+let heroCurrentIdx = 0;
+let heroSlides = [];
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-  heroScene.add(ambient);
-  const dir = new THREE.DirectionalLight(0xe8c766, 1.2);
-  dir.position.set(4,6,5);
-  heroScene.add(dir);
-  const dir2 = new THREE.DirectionalLight(0x5c1a2e, 0.8);
-  dir2.position.set(-5,-3,2);
-  heroScene.add(dir2);
-
-  // Draw an "S" crest onto a canvas texture, then wrap around a torus-like ring + central emblem
-  const group = new THREE.Group();
-
-  const ringGeo = new THREE.TorusGeometry(2.1, 0.06, 16, 100);
-  const ringMat = new THREE.MeshStandardMaterial({color:0xc9a227, metalness:0.7, roughness:0.3});
-  const ring = new THREE.Mesh(ringGeo, ringMat);
-  group.add(ring);
-
-  const ring2Geo = new THREE.TorusGeometry(2.4, 0.02, 16, 100);
-  const ring2 = new THREE.Mesh(ring2Geo, new THREE.MeshStandardMaterial({color:0x7d2740, metalness:0.6, roughness:0.4}));
-  group.add(ring2);
-
-  // Central monogram plane
-  const cv = document.createElement('canvas'); cv.width=512; cv.height=512;
-  const cctx = cv.getContext('2d');
-  cctx.clearRect(0,0,512,512);
-  cctx.fillStyle='#e8c766';
-  cctx.font='700 340px "Playfair Display", serif';
-  cctx.textAlign='center'; cctx.textBaseline='middle';
-  cctx.fillText('S',256,290);
-  const tex = new THREE.CanvasTexture(cv);
-  const planeMat = new THREE.MeshBasicMaterial({map:tex, transparent:true});
-  const plane = new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.6), planeMat);
-  group.add(plane);
-
-  heroMesh = group;
-  heroScene.add(group);
-  heroFrame = requestAnimationFrame(animateHero);
+function buildHeroSlides(){
+  heroSlides = HERO_CATEGORY_ORDER.map(cat=>{
+    const withImage = PRODUCTS.find(p=>p.category===cat && p.images && p.images.length);
+    const anyInCat = PRODUCTS.find(p=>p.category===cat);
+    return { category: cat, image: withImage ? withImage.images[0] : null, label: anyInCat ? anyInCat.name : cat };
+  }).filter(s => PRODUCTS.some(p=>p.category===s.category));
 }
-let heroMouseX = 0, heroMouseY = 0;
-function animateHero(){
-  heroFrame = requestAnimationFrame(animateHero);
-  if(heroMesh){
-    heroMesh.rotation.y += 0.0035;
-    heroMesh.rotation.x = heroMouseY*0.15;
-    heroMesh.rotation.z = heroMouseX*0.05;
+
+function renderHeroStage(){
+  const stack = document.getElementById('hero-card-stack');
+  const dotsWrap = document.getElementById('hero-dots');
+  if(!stack || heroSlides.length===0) return;
+  stack.innerHTML = heroSlides.map((s,i)=>`
+    <div class="hero-card" data-idx="${i}" style="opacity:${i===0?1:0};transform:rotateY(${i===0?0:90}deg);">
+      ${s.image
+        ? `<img src="${s.image}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`
+        : `<canvas id="hero-canvas-${i}" width="260" height="260"></canvas><div class="hero-card-label">${s.category}</div>`}
+    </div>
+  `).join('');
+  dotsWrap.innerHTML = heroSlides.map((s,i)=>`<div class="hero-dot ${i===0?'active':''}"></div>`).join('');
+  heroSlides.forEach((s,i)=>{
+    if(!s.image){
+      const c = document.getElementById('hero-canvas-'+i);
+      if(c) drawIcon(c.getContext('2d'), c.width, c.height, s.category);
+    }
+  });
+  heroCurrentIdx = 0;
+  if(heroTimer) clearInterval(heroTimer);
+  if(heroSlides.length > 1){
+    heroTimer = setInterval(heroNextSlide, 2600);
   }
-  heroRenderer.render(heroScene, heroCamera);
 }
-window.addEventListener('mousemove', (e)=>{
-  heroMouseX = (e.clientX/window.innerWidth - 0.5);
-  heroMouseY = (e.clientY/window.innerHeight - 0.5);
-});
-window.addEventListener('resize', ()=>{
-  if(!heroRenderer) return;
-  heroCamera.aspect = window.innerWidth/window.innerHeight;
-  heroCamera.updateProjectionMatrix();
-  heroRenderer.setSize(window.innerWidth, window.innerHeight);
-});
+
+function heroNextSlide(){
+  const cards = document.querySelectorAll('#hero-card-stack .hero-card');
+  const dots = document.querySelectorAll('#hero-dots .hero-dot');
+  if(cards.length < 2) return;
+  const prevIdx = heroCurrentIdx;
+  heroCurrentIdx = (heroCurrentIdx + 1) % heroSlides.length;
+
+  cards[prevIdx].style.transform = 'rotateY(-90deg)';
+  cards[prevIdx].style.opacity = '0';
+
+  const nextCard = cards[heroCurrentIdx];
+  nextCard.style.transition = 'none';
+  nextCard.style.transform = 'rotateY(90deg)';
+  nextCard.style.opacity = '0';
+  requestAnimationFrame(()=>{
+    nextCard.style.transition = 'transform 0.9s cubic-bezier(.6,.05,.2,1), opacity 0.6s ease';
+    nextCard.style.transform = 'rotateY(0deg)';
+    nextCard.style.opacity = '1';
+  });
+
+  dots.forEach((d,i)=>d.classList.toggle('active', i===heroCurrentIdx));
+}
+
+function initHero(){
+  buildHeroSlides();
+  renderHeroStage();
+}
 
 /* ================= QUICK VIEW 3D SCENE (drag to rotate garment card) ================= */
 let qvScene, qvCamera, qvRenderer, qvMesh;
