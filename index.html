@@ -1450,7 +1450,10 @@ async function placeOrder(){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({amount: total, receipt: 'susathi_'+Date.now()})
     });
-    if(!orderRes.ok) throw new Error('order-failed');
+    if(!orderRes.ok){
+      const errData = await orderRes.json().catch(()=>({}));
+      throw new Error(errData.error || 'order-failed');
+    }
     const order = await orderRes.json();
     err.textContent = '';
 
@@ -1489,7 +1492,7 @@ async function placeOrder(){
     });
     rzp.open();
   }catch(e){
-    err.textContent = 'Could not reach the payment server. Check that your backend is deployed and BACKEND_URL is set correctly.';
+    err.textContent = e.message && e.message !== 'order-failed' ? e.message : 'Could not reach the payment server. Please check your connection and try again.';
   }
 }
 
