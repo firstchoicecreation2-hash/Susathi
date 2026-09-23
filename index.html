@@ -697,11 +697,11 @@ let currentPayMethod = 'upi';
 let ADMIN_PASSCODE = null; // set only after the server confirms it — never hardcoded here
 
 /* ================= RAZORPAY CONFIG =================
-   RAZORPAY_KEY_ID is your public Test Key — safe to keep here.
+   RAZORPAY_KEY_ID is your public Live Key — safe to keep here.
    BACKEND_URL must point to your deployed backend (see susathi-backend/README.md).
    Until you deploy the backend, leave BACKEND_URL as-is and checkout will fall
    back to the simulated flow so the rest of the site keeps working. */
-const RAZORPAY_KEY_ID = 'rzp_test_TSMThxXZVXTGas';
+const RAZORPAY_KEY_ID = 'rzp_live_Tf8UJJCpIE7WfE';
 const BACKEND_URL = ''; // same domain on Vercel — requests go to /api/...
 
 const CATS = ['All','Formal','Casual','T-Shirt','Pants','Lower','Winter'];
