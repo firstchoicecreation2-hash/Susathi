@@ -450,6 +450,7 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
           <option value="Casual">Casual</option>
           <option value="T-Shirt">T-Shirt</option>
           <option value="Pants">Pants</option>
+          <option value="Jeans">Jeans</option>
           <option value="Lower">Lower</option>
           <option value="Winter">Winter / Hoodie</option>
         </select>
@@ -704,7 +705,7 @@ let ADMIN_PASSCODE = null; // set only after the server confirms it — never ha
 const RAZORPAY_KEY_ID = 'rzp_live_Tf8UJJCpIE7WfE';
 const BACKEND_URL = ''; // same domain on Vercel — requests go to /api/...
 
-const CATS = ['All','Formal','Casual','T-Shirt','Pants','Lower','Winter'];
+const CATS = ['All','Formal','Casual','T-Shirt','Pants','Jeans','Lower','Winter'];
 
 /* ================= STORAGE ================= */
 const hasClaudeStorage = (typeof window !== 'undefined' && typeof window.storage !== 'undefined');
@@ -779,7 +780,7 @@ function drawIcon(ctx, w, h, category){
     ctx.lineTo(-s*0.55,s*1.0); ctx.lineTo(s*0.55,s*1.0); ctx.lineTo(s*0.55,-s*0.1);
     ctx.lineTo(s*0.95,-s*0.35); ctx.lineTo(s*0.45,-s*0.85);
     ctx.quadraticCurveTo(0,-s*0.55,-s*0.45,-s*0.85);
-  } else if(category==='Pants' || category==='Lower'){
+  } else if(category==='Pants' || category==='Lower' || category==='Jeans'){
     ctx.moveTo(-s*0.55,-s*0.9); ctx.lineTo(-s*0.55,s*0.1); ctx.lineTo(-s*0.75,s*1.0);
     ctx.lineTo(-s*0.25,s*1.0); ctx.lineTo(0,s*0.15); ctx.lineTo(s*0.25,s*1.0);
     ctx.lineTo(s*0.75,s*1.0); ctx.lineTo(s*0.55,s*0.1); ctx.lineTo(s*0.55,-s*0.9);
@@ -797,7 +798,7 @@ function drawIcon(ctx, w, h, category){
 }
 
 /* ================= HERO CATEGORY SHOWCASE ================= */
-const HERO_CATEGORY_ORDER = ['Formal','Casual','T-Shirt','Pants','Lower','Winter'];
+const HERO_CATEGORY_ORDER = ['Formal','Casual','T-Shirt','Pants','Jeans','Lower','Winter'];
 let heroTimer = null;
 let heroCurrentIdx = 0;
 let heroSlides = [];
@@ -1181,16 +1182,22 @@ async function submitQvReview(){
 }
 
 /* ================= QUICK VIEW MODAL ================= */
+function getSizesForCategory(category){
+  if(category === 'Jeans'){
+    return ['28','30','32','34'];
+  }
+  return ['S','M','L','XL','XXL'];
+}
 function openQuickView(id){
   qvProduct = PRODUCTS.find(p=>p.id===id);
   if(!qvProduct) return;
-  qvSize = 'M'; qvQtyVal = 1;
+  const sizes = getSizesForCategory(qvProduct.category);
+  qvSize = sizes[Math.floor(sizes.length/2)]; qvQtyVal = 1;
   document.getElementById('qv-cat').textContent = qvProduct.category;
   document.getElementById('qv-name').textContent = qvProduct.name;
   document.getElementById('qv-price').textContent = '₹'+qvProduct.price.toLocaleString('en-IN');
   document.getElementById('qv-desc').textContent = qvProduct.desc;
   document.getElementById('qv-qty').textContent = '1';
-  const sizes = ['S','M','L','XL','XXL'];
   document.getElementById('qv-sizes').innerHTML = sizes.map(s=>`<div class="size-chip ${s===qvSize?'active':''}" data-size="${s}" onclick="setQvSize('${s}')">${s}</div>`).join('');
   const addBtn = document.getElementById('qv-add-btn');
   if(qvProduct.stock<=0){ addBtn.disabled=true; addBtn.textContent='Out of Stock'; }
@@ -1338,6 +1345,7 @@ function cartTotal(){
 }
 function openCheckout(){
   if(CART.length===0) return;
+  closeCart();
   const subtotal = cartTotal();
   const shipping = 0; // free shipping across India
   const total = subtotal + shipping;
@@ -1587,7 +1595,7 @@ function renderAdminTable(){
       <td><input value="${escapeAttr(p.name)}" onchange="updateProductField('${p.id}','name',this.value)"></td>
       <td>
         <select onchange="updateProductField('${p.id}','category',this.value)">
-          ${['Formal','Casual','T-Shirt','Pants','Lower','Winter'].map(c=>`<option value="${c}" ${c===p.category?'selected':''}>${c}</option>`).join('')}
+          ${['Formal','Casual','T-Shirt','Pants','Jeans','Lower','Winter'].map(c=>`<option value="${c}" ${c===p.category?'selected':''}>${c}</option>`).join('')}
         </select>
       </td>
       <td><input type="number" value="${p.price}" onchange="updateProductField('${p.id}','price',Number(this.value))"></td>
