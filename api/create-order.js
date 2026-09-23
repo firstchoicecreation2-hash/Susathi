@@ -28,6 +28,7 @@ module.exports = async (req, res) => {
     res.status(200).json(order);
   } catch (err) {
     console.error('Order creation failed:', err);
-    res.status(500).json({ error: 'Could not create order.' });
+    const detail = (err && err.error && err.error.description) ? err.error.description : (err && err.message ? err.message : String(err));
+    res.status(500).json({ error: 'Could not create order: ' + detail });
   }
 };
