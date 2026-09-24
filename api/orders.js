@@ -22,6 +22,7 @@ async function sendOrderEmail(order) {
       <b>Email:</b> ${order.email || '-'}</p>
       <p><b>Address:</b> ${order.address}, ${order.city} - ${order.pincode}</p>
       <p><b>Items:</b><br>${itemsHtml}</p>
+      ${order.couponCode ? `<p><b>Coupon used:</b> ${order.couponCode} (−₹${order.discount})</p>` : ''}
       <p><b>Total:</b> ₹${order.total}</p>
     `;
     await fetch('https://api.resend.com/emails', {
@@ -86,6 +87,31 @@ module.exports = async (req, res) => {
     } catch (err) {
       console.error('Could not save order:', err);
       res.status(500).json({ error: 'Could not save order.' });
+    }
+    return;
+  }
+
+  if (req.method === 'PATCH') {
+    const passcode = req.headers['x-admin-passcode'];
+    if (passcode !== ADMIN_PASSCODE) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const { id, status } = req.body;
+      if (!id || !status) {
+        return res.status(400).json({ error: 'id and status are required.' });
+      }
+      const orders = (await kv.get('susathi-orders')) || [];
+      const order = orders.find(o => o.id === id);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found.' });
+      }
+      order.status = status;
+      await kv.set('susathi-orders', orders);
+      res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('Could not update order status:', err);
+      res.status(500).json({ error: 'Could not update order status.' });
     }
     return;
   }
