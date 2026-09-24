@@ -401,6 +401,11 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
     <div class="checkout-body">
       <h3>Checkout</h3>
       <p class="checkout-sub">Enter your details to complete the order.</p>
+      <div style="display:flex;gap:10px;margin-bottom:18px;">
+        <input id="co-coupon" placeholder="Have a coupon code?" style="flex:1;background:var(--panel-2);border:1px solid var(--hairline);color:var(--ivory);padding:12px 14px;font-size:0.85rem;border-radius:var(--radius);text-transform:uppercase;">
+        <button class="btn btn-outline" style="padding:0 22px;flex:0 0 auto;" onclick="applyCoupon()">Apply</button>
+      </div>
+      <div id="co-coupon-status" style="font-size:0.8rem;margin-bottom:14px;min-height:16px;"></div>
       <div class="order-summary" id="checkout-summary"></div>
       <div class="co-grid">
         <div class="field full"><label>Full Name</label><input id="co-name" placeholder="Your full name"></div>
@@ -482,6 +487,30 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
     </div>
 
     <div class="admin-panel">
+      <h4>Coupons</h4>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">Create discount codes customers can enter at checkout.</p>
+      <div class="admin-form-grid">
+        <input id="cp-code" placeholder="CODE (e.g. FIRST100)" style="text-transform:uppercase;">
+        <select id="cp-type">
+          <option value="percent">Percent off (%)</option>
+          <option value="flat">Flat amount off (₹)</option>
+        </select>
+        <input id="cp-value" type="number" placeholder="Value (e.g. 5 or 100)">
+        <input id="cp-expiry" type="date" placeholder="Expiry (optional)">
+      </div>
+      <button class="btn btn-solid" style="padding:13px 30px;" onclick="adminAddCoupon()">Add Coupon</button>
+      <div id="cp-status" style="font-size:0.8rem;color:var(--muted);margin-top:10px;min-height:16px;"></div>
+      <div class="table-wrap" style="margin-top:20px;">
+        <table>
+          <thead>
+            <tr><th>Code</th><th>Discount</th><th>Expiry</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="admin-coupons-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="admin-panel">
       <h4>Current Catalog</h4>
       <div class="table-wrap">
         <table>
@@ -495,7 +524,11 @@ footer .logo{font-size:1.1rem;margin-bottom:10px;display:block;}
 
     <div class="admin-panel">
       <h4>Orders</h4>
-      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">Every COD and online order appears here, newest first.</p>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">Mark an order complete once it's fulfilled to move it out of the fresh list.</p>
+      <div style="display:flex;gap:10px;margin-bottom:18px;">
+        <button class="cat-pill active" id="order-tab-pending" onclick="setOrderTab('pending')">Fresh Orders</button>
+        <button class="cat-pill" id="order-tab-completed" onclick="setOrderTab('completed')">Completed Orders</button>
+      </div>
       <div id="admin-orders-list"></div>
     </div>
   </div>
@@ -1359,19 +1392,68 @@ function cartTotal(){
     return sum + (p ? p.price*c.qty : 0);
   },0);
 }
+let appliedCoupon = null;
+
+function computeCheckoutTotals(){
+  const subtotal = cartTotal();
+  const shipping = 0; // free shipping across India
+  let discount = 0;
+  if(appliedCoupon){
+    discount = appliedCoupon.type === 'percent'
+      ? Math.round(subtotal * appliedCoupon.value / 100)
+      : Math.min(appliedCoupon.value, subtotal);
+  }
+  const total = Math.max(0, subtotal + shipping - discount);
+  return { subtotal, shipping, discount, total };
+}
+
+function refreshCheckoutSummary(){
+  const { subtotal, discount, total } = computeCheckoutTotals();
+  let html = `
+    <div class="os-row"><span>Items (${CART.reduce((a,c)=>a+c.qty,0)})</span><span>₹${subtotal.toLocaleString('en-IN')}</span></div>
+    <div class="os-row"><span>Shipping</span><span>Free</span></div>`;
+  if(appliedCoupon){
+    html += `<div class="os-row" style="color:var(--gold);"><span>Coupon (${appliedCoupon.code})</span><span>−₹${discount.toLocaleString('en-IN')}</span></div>`;
+  }
+  html += `<div class="os-row total"><span>Total</span><span>₹${total.toLocaleString('en-IN')}</span></div>`;
+  document.getElementById('checkout-summary').innerHTML = html;
+}
+
 function openCheckout(){
   if(CART.length===0) return;
   closeCart();
-  const subtotal = cartTotal();
-  const shipping = 0; // free shipping across India
-  const total = subtotal + shipping;
-  document.getElementById('checkout-summary').innerHTML = `
-    <div class="os-row"><span>Items (${CART.reduce((a,c)=>a+c.qty,0)})</span><span>₹${subtotal.toLocaleString('en-IN')}</span></div>
-    <div class="os-row"><span>Shipping</span><span>Free</span></div>
-    <div class="os-row total"><span>Total</span><span>₹${total.toLocaleString('en-IN')}</span></div>
-  `;
+  appliedCoupon = null;
+  document.getElementById('co-coupon').value = '';
+  document.getElementById('co-coupon-status').textContent = '';
+  refreshCheckoutSummary();
   document.getElementById('co-error').textContent='';
   document.getElementById('checkout-overlay').classList.add('show');
+}
+async function applyCoupon(){
+  const input = document.getElementById('co-coupon');
+  const status = document.getElementById('co-coupon-status');
+  const code = input.value.trim().toUpperCase();
+  if(!code){ status.textContent=''; return; }
+  status.textContent = 'Checking...';
+  status.style.color = 'var(--muted)';
+  try{
+    const res = await fetch('/api/coupons?code=' + encodeURIComponent(code));
+    const data = await res.json();
+    if(data.valid){
+      appliedCoupon = { code: data.code, type: data.type, value: data.value };
+      status.textContent = 'Coupon applied!';
+      status.style.color = 'var(--gold)';
+    }else{
+      appliedCoupon = null;
+      status.textContent = 'Invalid or expired coupon code.';
+      status.style.color = 'var(--danger)';
+    }
+  }catch(err){
+    appliedCoupon = null;
+    status.textContent = 'Could not check coupon. Please try again.';
+    status.style.color = 'var(--danger)';
+  }
+  refreshCheckoutSummary();
 }
 function selectPay(method){
   currentPayMethod = method;
@@ -1399,11 +1481,12 @@ function validateCheckoutForm(){
 let lastCheckoutDetails = null;
 
 function finalizeOrder(){
-  const subtotal = cartTotal();
+  const { subtotal, discount, total } = computeCheckoutTotals();
   const orderId = 'SUS-'+Math.floor(100000+Math.random()*900000);
   const orderRecord = {
     id: orderId,
     date: new Date().toISOString(),
+    status: 'pending',
     paymentMethod: currentPayMethod,
     name: lastCheckoutDetails.name,
     phone: lastCheckoutDetails.phone,
@@ -1415,7 +1498,10 @@ function finalizeOrder(){
       const p = PRODUCTS.find(pp=>pp.id===c.id);
       return { id: c.id, name: p ? p.name : c.id, size: c.size, qty: c.qty, price: p ? p.price : 0 };
     }),
-    total: subtotal,
+    subtotal: subtotal,
+    couponCode: appliedCoupon ? appliedCoupon.code : null,
+    discount: discount,
+    total: total,
   };
 
   // Update local stock immediately for a responsive UI. The server also
@@ -1463,9 +1549,7 @@ async function placeOrder(){
     return;
   }
 
-  const subtotal = cartTotal();
-  const shipping = 0; // free shipping across India
-  const total = subtotal + shipping;
+  const { total } = computeCheckoutTotals();
 
   try{
     err.textContent = 'Contacting payment server...';
@@ -1562,6 +1646,7 @@ async function tryAdminLogin(){
       document.getElementById('admin-dash').style.display='block';
       renderAdminTable();
       renderAdminOrders();
+      renderAdminCoupons();
     }else{
       errEl.textContent = 'Incorrect passcode. Try again.';
     }
@@ -1569,6 +1654,8 @@ async function tryAdminLogin(){
     errEl.textContent = 'Could not reach the server. Please try again.';
   }
 }
+let cachedOrders = [];
+let currentOrderTab = 'pending';
 async function renderAdminOrders(){
   const wrap = document.getElementById('admin-orders-list');
   wrap.innerHTML = `<p style="color:var(--muted);font-size:0.85rem;">Loading orders...</p>`;
@@ -1576,28 +1663,128 @@ async function renderAdminOrders(){
     const res = await fetch('/api/orders', {
       headers: {'x-admin-passcode': ADMIN_PASSCODE}
     });
-    const orders = await res.json();
-    if(!Array.isArray(orders) || orders.length===0){
-      wrap.innerHTML = `<p style="color:var(--muted);font-size:0.85rem;">No orders yet.</p>`;
-      return;
-    }
-    wrap.innerHTML = orders.map(o=>{
-      const itemsList = o.items.map(i=>`${i.qty} x ${escapeHtml(i.name)} (Size ${i.size}) — ₹${(i.price*i.qty).toLocaleString('en-IN')}`).join('<br>');
-      const dateStr = new Date(o.date).toLocaleString('en-IN');
-      return `
-      <div style="border:1px solid var(--hairline);border-radius:var(--radius);padding:18px;margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-          <div><b style="color:var(--gold-bright);font-family:'Cormorant Garamond',serif;font-size:1.1rem;">${o.id}</b> <span style="color:var(--muted);font-size:0.78rem;">— ${dateStr}</span></div>
-          <div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);border:1px solid var(--hairline);padding:4px 10px;border-radius:999px;">${o.paymentMethod}</div>
-        </div>
-        <div style="font-size:0.85rem;color:var(--ivory);margin-bottom:6px;"><b>${escapeHtml(o.name)}</b> · ${escapeHtml(o.phone)} ${o.email? '· '+escapeHtml(o.email):''}</div>
-        <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">${escapeHtml(o.address)}, ${escapeHtml(o.city)} - ${escapeHtml(o.pincode)}</div>
-        <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">${itemsList}</div>
-        <div style="font-size:0.95rem;color:var(--gold-bright);font-family:'Cormorant Garamond',serif;font-weight:600;">Total: ₹${o.total.toLocaleString('en-IN')}</div>
-      </div>`;
-    }).join('');
+    cachedOrders = await res.json();
+    renderOrdersList();
   }catch(err){
     wrap.innerHTML = `<p style="color:var(--danger);font-size:0.85rem;">Could not load orders.</p>`;
+  }
+}
+function setOrderTab(tab){
+  currentOrderTab = tab;
+  document.getElementById('order-tab-pending').classList.toggle('active', tab==='pending');
+  document.getElementById('order-tab-completed').classList.toggle('active', tab==='completed');
+  renderOrdersList();
+}
+function renderOrdersList(){
+  const wrap = document.getElementById('admin-orders-list');
+  if(!Array.isArray(cachedOrders)){ wrap.innerHTML = ''; return; }
+  const filtered = cachedOrders.filter(o => (o.status || 'pending') === currentOrderTab);
+  if(filtered.length===0){
+    wrap.innerHTML = `<p style="color:var(--muted);font-size:0.85rem;">No ${currentOrderTab==='pending'?'fresh':'completed'} orders.</p>`;
+    return;
+  }
+  wrap.innerHTML = filtered.map(o=>{
+    const itemsList = o.items.map(i=>`${i.qty} x ${escapeHtml(i.name)} (Size ${i.size}) — ₹${(i.price*i.qty).toLocaleString('en-IN')}`).join('<br>');
+    const dateStr = new Date(o.date).toLocaleString('en-IN');
+    const nextStatus = currentOrderTab==='pending' ? 'completed' : 'pending';
+    const actionLabel = currentOrderTab==='pending' ? 'Mark as Complete' : 'Move Back to Fresh';
+    return `
+    <div style="border:1px solid var(--hairline);border-radius:var(--radius);padding:18px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <div><b style="color:var(--gold-bright);font-family:'Cormorant Garamond',serif;font-size:1.1rem;">${o.id}</b> <span style="color:var(--muted);font-size:0.78rem;">— ${dateStr}</span></div>
+        <div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);border:1px solid var(--hairline);padding:4px 10px;border-radius:999px;">${o.paymentMethod}</div>
+      </div>
+      <div style="font-size:0.85rem;color:var(--ivory);margin-bottom:6px;"><b>${escapeHtml(o.name)}</b> · ${escapeHtml(o.phone)} ${o.email? '· '+escapeHtml(o.email):''}</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">${escapeHtml(o.address)}, ${escapeHtml(o.city)} - ${escapeHtml(o.pincode)}</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">${itemsList}</div>
+      ${o.couponCode ? `<div style="font-size:0.8rem;color:var(--gold);margin-bottom:6px;">Coupon: ${escapeHtml(o.couponCode)} (−₹${o.discount||0})</div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+        <div style="font-size:0.95rem;color:var(--gold-bright);font-family:'Cormorant Garamond',serif;font-weight:600;">Total: ₹${o.total.toLocaleString('en-IN')}</div>
+        <button class="icon-action" onclick="setOrderStatus('${o.id}','${nextStatus}')">${actionLabel}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function setOrderStatus(id, status){
+  try{
+    await fetch('/api/orders', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json', 'x-admin-passcode': ADMIN_PASSCODE},
+      body: JSON.stringify({id, status})
+    });
+    const order = cachedOrders.find(o=>o.id===id);
+    if(order) order.status = status;
+    renderOrdersList();
+    toast(status==='completed' ? 'Order marked complete' : 'Order moved back to fresh');
+  }catch(err){
+    toast('Could not update order');
+  }
+}
+
+/* ================= COUPONS (admin) ================= */
+async function renderAdminCoupons(){
+  const body = document.getElementById('admin-coupons-body');
+  body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px;">Loading...</td></tr>`;
+  try{
+    const res = await fetch('/api/coupons', { headers:{'x-admin-passcode': ADMIN_PASSCODE} });
+    const coupons = await res.json();
+    if(!Array.isArray(coupons) || coupons.length===0){
+      body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px;">No coupons yet.</td></tr>`;
+      return;
+    }
+    body.innerHTML = coupons.map(c=>`
+      <tr>
+        <td><b style="color:var(--gold-bright);">${escapeHtml(c.code)}</b></td>
+        <td>${c.type==='percent' ? c.value+'% off' : '₹'+c.value+' off'}</td>
+        <td>${c.expiry || 'No expiry'}</td>
+        <td><button class="icon-action danger" onclick="deleteCoupon('${c.code}')">Delete</button></td>
+      </tr>
+    `).join('');
+  }catch(err){
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--danger);padding:16px;">Could not load coupons.</td></tr>`;
+  }
+}
+async function adminAddCoupon(){
+  const code = document.getElementById('cp-code').value.trim().toUpperCase();
+  const type = document.getElementById('cp-type').value;
+  const value = Number(document.getElementById('cp-value').value);
+  const expiry = document.getElementById('cp-expiry').value || null;
+  const status = document.getElementById('cp-status');
+  if(!code || !value){
+    status.textContent = 'Please enter a code and a value.';
+    status.style.color = 'var(--danger)';
+    return;
+  }
+  try{
+    const res = await fetch('/api/coupons', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', 'x-admin-passcode': ADMIN_PASSCODE},
+      body: JSON.stringify({code, type, value, expiry})
+    });
+    if(!res.ok) throw new Error();
+    document.getElementById('cp-code').value='';
+    document.getElementById('cp-value').value='';
+    document.getElementById('cp-expiry').value='';
+    status.textContent = 'Coupon saved.';
+    status.style.color = 'var(--gold)';
+    renderAdminCoupons();
+  }catch(err){
+    status.textContent = 'Could not save coupon.';
+    status.style.color = 'var(--danger)';
+  }
+}
+async function deleteCoupon(code){
+  if(!confirm('Delete coupon ' + code + '?')) return;
+  try{
+    await fetch('/api/coupons', {
+      method:'DELETE',
+      headers:{'Content-Type':'application/json', 'x-admin-passcode': ADMIN_PASSCODE},
+      body: JSON.stringify({code})
+    });
+    renderAdminCoupons();
+    toast('Coupon deleted');
+  }catch(err){
+    toast('Could not delete coupon');
   }
 }
 function renderAdminTable(){
